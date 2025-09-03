@@ -1,0 +1,366 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CRUD Management System</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <link href="/static/css/style.css" rel="stylesheet">
+</head>
+<body>
+    <nav class="navbar navbar-expand-lg navbar-dark bg-primary">
+        <div class="container">
+            <a class="navbar-brand" href="#">
+                <i class="fas fa-graduation-cap"></i> CRUD Management System
+            </a>
+            <div class="navbar-nav ms-auto">
+                <a class="nav-link" href="#mahasiswa" onclick="showSection('mahasiswa')">
+                    <i class="fas fa-user-graduate"></i> Mahasiswa
+                </a>
+                <a class="nav-link" href="#alumni" onclick="showSection('alumni')">
+                    <i class="fas fa-users"></i> Alumni
+                </a>
+                <a class="nav-link" href="#pekerjaan" onclick="showSection('pekerjaan')">
+                    <i class="fas fa-briefcase"></i> Pekerjaan
+                </a>
+            </div>
+        </div>
+    </nav>
+
+    <div class="container mt-4">
+        <!-- Dashboard Section -->
+        <div id="dashboard" class="section active">
+            <div class="row">
+                <div class="col-12">
+                    <h1 class="mb-4">
+                        <i class="fas fa-tachometer-alt"></i> Dashboard
+                    </h1>
+                </div>
+            </div>
+            <div class="row">
+                <div class="col-md-4">
+                    <div class="card bg-primary text-white">
+                        <div class="card-body">
+                            <div class="d-flex justify-content-between">
+                                <div>
+                                    <h5>Total Mahasiswa</h5>
+                                    <h3 id="totalMahasiswa">-</h3>
+                                </div>
+                                <div class="align-self-center">
+                                    <i class="fas fa-user-graduate fa-2x"></i>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-4">
+                    <div class="card bg-success text-white">
+                        <div class="card-body">
+                            <div class="d-flex justify-content-between">
+                                <div>
+                                    <h5>Total Alumni</h5>
+                                    <h3 id="totalAlumni">-</h3>
+                                </div>
+                                <div class="align-self-center">
+                                    <i class="fas fa-users fa-2x"></i>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-4">
+                    <div class="card bg-warning text-white">
+                        <div class="card-body">
+                            <div class="d-flex justify-content-between">
+                                <div>
+                                    <h5>Total Pekerjaan</h5>
+                                    <h3 id="totalPekerjaan">-</h3>
+                                </div>
+                                <div class="align-self-center">
+                                    <i class="fas fa-briefcase fa-2x"></i>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Mahasiswa Section -->
+        <div id="mahasiswa" class="section">
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <h2><i class="fas fa-user-graduate"></i> Data Mahasiswa</h2>
+                <button class="btn btn-primary" onclick="showMahasiswaForm()">
+                    <i class="fas fa-plus"></i> Tambah Mahasiswa
+                </button>
+            </div>
+            
+            <div class="card">
+                <div class="card-body">
+                    <div class="table-responsive">
+                        <table class="table table-striped" id="mahasiswaTable">
+                            <thead>
+                                <tr>
+                                    <th>ID</th>
+                                    <th>NIM</th>
+                                    <th>Nama</th>
+                                    <th>Jurusan</th>
+                                    <th>Angkatan</th>
+                                    <th>Email</th>
+                                    <th>Aksi</th>
+                                </tr>
+                            </thead>
+                            <tbody id="mahasiswaTableBody">
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Alumni Section -->
+        <div id="alumni" class="section">
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <h2><i class="fas fa-users"></i> Data Alumni</h2>
+                <button class="btn btn-success" onclick="showAlumniForm()">
+                    <i class="fas fa-plus"></i> Tambah Alumni
+                </button>
+            </div>
+            
+            <div class="card">
+                <div class="card-body">
+                    <div class="table-responsive">
+                        <table class="table table-striped" id="alumniTable">
+                            <thead>
+                                <tr>
+                                    <th>ID</th>
+                                    <th>NIM</th>
+                                    <th>Nama</th>
+                                    <th>Jurusan</th>
+                                    <th>Angkatan</th>
+                                    <th>Tahun Lulus</th>
+                                    <th>Email</th>
+                                    <th>Aksi</th>
+                                </tr>
+                            </thead>
+                            <tbody id="alumniTableBody">
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Pekerjaan Section -->
+        <div id="pekerjaan" class="section">
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <h2><i class="fas fa-briefcase"></i> Data Pekerjaan Alumni</h2>
+                <button class="btn btn-warning" onclick="showPekerjaanForm()">
+                    <i class="fas fa-plus"></i> Tambah Pekerjaan
+                </button>
+            </div>
+            
+            <div class="card">
+                <div class="card-body">
+                    <div class="table-responsive">
+                        <table class="table table-striped" id="pekerjaanTable">
+                            <thead>
+                                <tr>
+                                    <th>ID</th>
+                                    <th>Alumni</th>
+                                    <th>Perusahaan</th>
+                                    <th>Posisi</th>
+                                    <th>Bidang</th>
+                                    <th>Lokasi</th>
+                                    <th>Status</th>
+                                    <th>Aksi</th>
+                                </tr>
+                            </thead>
+                            <tbody id="pekerjaanTableBody">
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modals for Forms -->
+    <!-- Mahasiswa Modal -->
+    <div class="modal fade" id="mahasiswaModal" tabindex="-1">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Form Mahasiswa</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <form id="mahasiswaForm">
+                        <input type="hidden" id="mahasiswaId">
+                        <div class="mb-3">
+                            <label class="form-label">NIM</label>
+                            <input type="text" class="form-control" id="mahasiswaNim" required>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Nama</label>
+                            <input type="text" class="form-control" id="mahasiswaNama" required>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Jurusan</label>
+                            <input type="text" class="form-control" id="mahasiswaJurusan" required>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Angkatan</label>
+                            <input type="number" class="form-control" id="mahasiswaAngkatan" required>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Email</label>
+                            <input type="email" class="form-control" id="mahasiswaEmail" required>
+                        </div>
+                    </form>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Batal</button>
+                    <button type="button" class="btn btn-primary" onclick="saveMahasiswa()">Simpan</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Alumni Modal -->
+    <div class="modal fade" id="alumniModal" tabindex="-1">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Form Alumni</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <form id="alumniForm">
+                        <input type="hidden" id="alumniId">
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label class="form-label">NIM</label>
+                                    <input type="text" class="form-control" id="alumniNim" required>
+                                </div>
+                                <div class="mb-3">
+                                    <label class="form-label">Nama</label>
+                                    <input type="text" class="form-control" id="alumniNama" required>
+                                </div>
+                                <div class="mb-3">
+                                    <label class="form-label">Jurusan</label>
+                                    <input type="text" class="form-control" id="alumniJurusan" required>
+                                </div>
+                                <div class="mb-3">
+                                    <label class="form-label">Angkatan</label>
+                                    <input type="number" class="form-control" id="alumniAngkatan" required>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label class="form-label">Tahun Lulus</label>
+                                    <input type="number" class="form-control" id="alumniTahunLulus" required>
+                                </div>
+                                <div class="mb-3">
+                                    <label class="form-label">Email</label>
+                                    <input type="email" class="form-control" id="alumniEmail" required>
+                                </div>
+                                <div class="mb-3">
+                                    <label class="form-label">No. Telepon</label>
+                                    <input type="text" class="form-control" id="alumniNoTelepon">
+                                </div>
+                                <div class="mb-3">
+                                    <label class="form-label">Alamat</label>
+                                    <textarea class="form-control" id="alumniAlamat" rows="3"></textarea>
+                                </div>
+                            </div>
+                        </div>
+                    </form>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Batal</button>
+                    <button type="button" class="btn btn-success" onclick="saveAlumni()">Simpan</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Pekerjaan Modal -->
+    <div class="modal fade" id="pekerjaanModal" tabindex="-1">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Form Pekerjaan Alumni</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <form id="pekerjaanForm">
+                        <input type="hidden" id="pekerjaanId">
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label class="form-label">Alumni</label>
+                                    <select class="form-control" id="pekerjaanAlumniId" required>
+                                        <option value="">Pilih Alumni</option>
+                                    </select>
+                                </div>
+                                <div class="mb-3">
+                                    <label class="form-label">Nama Perusahaan</label>
+                                    <input type="text" class="form-control" id="pekerjaanNamaPerusahaan" required>
+                                </div>
+                                <div class="mb-3">
+                                    <label class="form-label">Posisi Jabatan</label>
+                                    <input type="text" class="form-control" id="pekerjaanPosisiJabatan" required>
+                                </div>
+                                <div class="mb-3">
+                                    <label class="form-label">Bidang Industri</label>
+                                    <input type="text" class="form-control" id="pekerjaanBidangIndustri" required>
+                                </div>
+                                <div class="mb-3">
+                                    <label class="form-label">Lokasi Kerja</label>
+                                    <input type="text" class="form-control" id="pekerjaanLokasiKerja" required>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label class="form-label">Gaji Range</label>
+                                    <input type="text" class="form-control" id="pekerjaanGajiRange">
+                                </div>
+                                <div class="mb-3">
+                                    <label class="form-label">Tanggal Mulai Kerja</label>
+                                    <input type="date" class="form-control" id="pekerjaanTanggalMulai" required>
+                                </div>
+                                <div class="mb-3">
+                                    <label class="form-label">Tanggal Selesai Kerja</label>
+                                    <input type="date" class="form-control" id="pekerjaanTanggalSelesai">
+                                </div>
+                                <div class="mb-3">
+                                    <label class="form-label">Status Pekerjaan</label>
+                                    <select class="form-control" id="pekerjaanStatus" required>
+                                        <option value="aktif">Aktif</option>
+                                        <option value="selesai">Selesai</option>
+                                        <option value="resigned">Resigned</option>
+                                    </select>
+                                </div>
+                                <div class="mb-3">
+                                    <label class="form-label">Deskripsi Pekerjaan</label>
+                                    <textarea class="form-control" id="pekerjaanDeskripsi" rows="3"></textarea>
+                                </div>
+                            </div>
+                        </div>
+                    </form>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Batal</button>
+                    <button type="button" class="btn btn-warning" onclick="savePekerjaan()">Simpan</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="/static/js/script.js"></script>
+</body>
+</html>
