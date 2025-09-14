@@ -2,6 +2,39 @@
 let currentEditId = null;
 let currentEditType = null;
 
+// Helper function untuk authorized requests
+function getAuthHeaders() {
+    const token = localStorage.getItem('token');
+    if (!token) {
+        window.location.href = '/login';
+        return null;
+    }
+    return {
+        'Authorization': 'Bearer ' + token,
+        'Content-Type': 'application/json'
+    };
+}
+
+function authorizedFetch(url, options = {}) {
+    const headers = getAuthHeaders();
+    if (!headers) return Promise.reject('No auth token');
+    
+    return fetch(url, {
+        ...options,
+        headers: {
+            ...headers,
+            ...(options.headers || {})
+        }
+    }).then(response => {
+        if (response.status === 401) {
+            localStorage.removeItem('token');
+            window.location.href = '/login';
+            throw new Error('Unauthorized');
+        }
+        return response;
+    });
+}
+
 // Initialize App
 document.addEventListener('DOMContentLoaded', function() {
     loadDashboard();
@@ -44,38 +77,41 @@ function showSection(sectionName) {
 
 // Dashboard Functions
 function loadDashboard() {
-    // Load counts for dashboard
-    fetch('/mahasiswa')
+    // Load counts for dashboard using authorized fetch
+    authorizedFetch('/api/mahasiswa/count')
         .then(response => response.json())
         .then(data => {
-            document.getElementById('totalMahasiswa').textContent = data.length || 0;
+            document.getElementById('totalMahasiswa').textContent = data.count || 0;
         })
         .catch(error => {
-            document.getElementById('totalMahasiswa').textContent = '0';
+            console.error('Error loading mahasiswa count:', error);
+            document.getElementById('totalMahasiswa').textContent = 'Error';
         });
 
-    fetch('/alumni')
+    authorizedFetch('/api/alumni/count')
         .then(response => response.json())
         .then(data => {
-            document.getElementById('totalAlumni').textContent = data.length || 0;
+            document.getElementById('totalAlumni').textContent = data.count || 0;
         })
         .catch(error => {
-            document.getElementById('totalAlumni').textContent = '0';
+            console.error('Error loading alumni count:', error);
+            document.getElementById('totalAlumni').textContent = 'Error';
         });
 
-    fetch('/pekerjaan')
+    authorizedFetch('/api/pekerjaan/count')
         .then(response => response.json())
         .then(data => {
-            document.getElementById('totalPekerjaan').textContent = data.length || 0;
+            document.getElementById('totalPekerjaan').textContent = data.count || 0;
         })
         .catch(error => {
-            document.getElementById('totalPekerjaan').textContent = '0';
+            console.error('Error loading pekerjaan count:', error);
+            document.getElementById('totalPekerjaan').textContent = 'Error';
         });
 }
 
 // Mahasiswa Functions
 function loadMahasiswa() {
-    fetch('/mahasiswa')
+    authorizedFetch('/api/mahasiswa')
         .then(response => response.json())
         .then(data => {
             const tbody = document.getElementById('mahasiswaTableBody');

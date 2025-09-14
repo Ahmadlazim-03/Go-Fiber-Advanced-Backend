@@ -11,6 +11,7 @@ type MahasiswaUsecase interface {
 	CreateMahasiswa(req *models.CreateMahasiswaRequest) (*models.Mahasiswa, error)
 	UpdateMahasiswa(id uint, req *models.UpdateMahasiswaRequest) (*models.Mahasiswa, error)
 	DeleteMahasiswa(id uint) error
+	CountMahasiswa() (int64, error)
 }
 
 type mahasiswaUsecase struct {
@@ -69,4 +70,8 @@ func (u *mahasiswaUsecase) UpdateMahasiswa(id uint, req *models.UpdateMahasiswaR
 
 func (u *mahasiswaUsecase) DeleteMahasiswa(id uint) error {
 	return u.mahasiswaRepo.Delete(id)
+}
+
+func (u *mahasiswaUsecase) CountMahasiswa() (int64, error) {
+	return u.mahasiswaRepo.Count()
 }

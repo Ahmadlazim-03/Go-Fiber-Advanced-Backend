@@ -1,9 +1,13 @@
 module modul4crud
 
-go 1.21
+go 1.24.0
+
+toolchain go1.24.7
 
 require (
 	github.com/gofiber/fiber/v2 v2.50.0
+	github.com/golang-jwt/jwt/v5 v5.3.0
+	golang.org/x/crypto v0.42.0
 	gorm.io/driver/postgres v1.5.0
 	gorm.io/gorm v1.25.5
 )
@@ -24,7 +28,6 @@ require (
 	github.com/valyala/bytebufferpool v1.0.0 // indirect
 	github.com/valyala/fasthttp v1.50.0 // indirect
 	github.com/valyala/tcplisten v1.0.0 // indirect
-	golang.org/x/crypto v0.7.0 // indirect
-	golang.org/x/sys v0.13.0 // indirect
-	golang.org/x/text v0.8.0 // indirect
+	golang.org/x/sys v0.36.0 // indirect
+	golang.org/x/text v0.29.0 // indirect
 )

@@ -1,0 +1,547 @@
+{
+  "info": {
+    "name": "CRUD Go Fiber PostgreSQL API",
+    "description": "Complete API testing collection for CRUD operations with JWT authentication",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    {
+      "key": "baseUrl",
+      "value": "http://localhost:3000",
+      "type": "string"
+    },
+    {
+      "key": "bearerToken",
+      "value": "",
+      "type": "string"
+    }
+  ],
+  "item": [
+    {
+      "name": "Authentication",
+      "item": [
+        {
+          "name": "Login",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"admin@example.com\",\n  \"password\": \"admin123\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/login",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "login"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Register",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"username\": \"testuser\",\n  \"email\": \"testuser@example.com\",\n  \"password\": \"password123\",\n  \"role\": \"user\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/register",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "register"]
+            }
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Mahasiswa",
+      "item": [
+        {
+          "name": "Get All Mahasiswa",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{bearerToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/mahasiswa",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "mahasiswa"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Get Mahasiswa Count",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{bearerToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/mahasiswa/count",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "mahasiswa", "count"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Create Mahasiswa",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{bearerToken}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"nim\": \"2021001001\",\n  \"nama\": \"Ahmad Budi Santoso\",\n  \"email\": \"ahmad.budi@student.ac.id\",\n  \"jurusan\": \"Teknik Informatika\",\n  \"angkatan\": 2021\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/mahasiswa",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "mahasiswa"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Get Mahasiswa by ID",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{bearerToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/mahasiswa/1",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "mahasiswa", "1"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Update Mahasiswa",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{bearerToken}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"nim\": \"2021001001\",\n  \"nama\": \"Ahmad Budi Santoso Updated\",\n  \"email\": \"ahmad.budi.updated@student.ac.id\",\n  \"jurusan\": \"Sistem Informasi\",\n  \"angkatan\": 2021\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/mahasiswa/1",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "mahasiswa", "1"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Delete Mahasiswa",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{bearerToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/mahasiswa/1",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "mahasiswa", "1"]
+            }
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Alumni",
+      "item": [
+        {
+          "name": "Get All Alumni",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{bearerToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/alumni",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "alumni"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Get Alumni Count",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{bearerToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/alumni/count",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "alumni", "count"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Create Alumni",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{bearerToken}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"nim\": \"2018001001\",\n  \"nama\": \"Siti Nur Aisyah\",\n  \"email\": \"siti.aisyah@alumni.ac.id\",\n  \"jurusan\": \"Teknik Informatika\",\n  \"tahun_lulus\": 2022,\n  \"alamat\": \"Jl. Merdeka No. 123, Jakarta Pusat\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/alumni",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "alumni"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Get Alumni by ID",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{bearerToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/alumni/1",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "alumni", "1"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Update Alumni",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{bearerToken}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"nim\": \"2018001001\",\n  \"nama\": \"Siti Nur Aisyah, S.Kom\",\n  \"email\": \"siti.aisyah.updated@alumni.ac.id\",\n  \"jurusan\": \"Teknik Informatika\",\n  \"tahun_lulus\": 2022,\n  \"alamat\": \"Jl. Sudirman No. 456, Jakarta Selatan\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/alumni/1",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "alumni", "1"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Delete Alumni",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{bearerToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/alumni/1",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "alumni", "1"]
+            }
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Pekerjaan",
+      "item": [
+        {
+          "name": "Get All Pekerjaan",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{bearerToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/pekerjaan",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "pekerjaan"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Create Pekerjaan",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{bearerToken}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"alumni_id\": 1,\n  \"nama_perusahaan\": \"PT. Tech Indonesia\",\n  \"posisi_jabatan\": \"Software Developer\",\n  \"bidang_industri\": \"Teknologi Informasi\",\n  \"lokasi_kerja\": \"Jakarta\",\n  \"gaji\": 8000000,\n  \"tahun_mulai\": 2022,\n  \"status\": \"aktif\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/pekerjaan",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "pekerjaan"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Get Pekerjaan by ID",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{bearerToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/pekerjaan/1",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "pekerjaan", "1"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Update Pekerjaan",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{bearerToken}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"alumni_id\": 1,\n  \"nama_perusahaan\": \"PT. Tech Indonesia\",\n  \"posisi_jabatan\": \"Senior Software Developer\",\n  \"bidang_industri\": \"Teknologi Informasi\",\n  \"lokasi_kerja\": \"Jakarta\",\n  \"gaji\": 12000000,\n  \"tahun_mulai\": 2022,\n  \"status\": \"aktif\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/pekerjaan/1",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "pekerjaan", "1"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Delete Pekerjaan",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{bearerToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/pekerjaan/1",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "pekerjaan", "1"]
+            }
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Dashboard",
+      "item": [
+        {
+          "name": "Get Dashboard Stats",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{bearerToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/dashboard",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "dashboard"]
+            }
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "User Management",
+      "item": [
+        {
+          "name": "Get All Users",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{bearerToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/users",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "users"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Get User by ID",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{bearerToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/users/1",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "users", "1"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Update User",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{bearerToken}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"username\": \"updated_user\",\n  \"email\": \"updated@example.com\",\n  \"role\": \"moderator\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/users/1",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "users", "1"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Delete User",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{bearerToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/users/1",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "users", "1"]
+            }
+          },
+          "response": []
+        }
+      ]
+    }
+  ]
+}

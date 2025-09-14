@@ -14,21 +14,50 @@
             <a class="navbar-brand" href="#">
                 <i class="fas fa-graduation-cap"></i> CRUD Management System
             </a>
-            <div class="navbar-nav ms-auto">
-                <a class="nav-link" href="#mahasiswa" onclick="showSection('mahasiswa')">
-                    <i class="fas fa-user-graduate"></i> Mahasiswa
-                </a>
-                <a class="nav-link" href="#alumni" onclick="showSection('alumni')">
-                    <i class="fas fa-users"></i> Alumni
-                </a>
-                <a class="nav-link" href="#pekerjaan" onclick="showSection('pekerjaan')">
-                    <i class="fas fa-briefcase"></i> Pekerjaan
-                </a>
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            <div class="collapse navbar-collapse" id="navbarNav">
+                <div class="navbar-nav me-auto">
+                    <a class="nav-link" href="#dashboard" onclick="showSection('dashboard')">
+                        <i class="fas fa-tachometer-alt"></i> Dashboard
+                    </a>
+                    <a class="nav-link protected-content" href="#mahasiswa" onclick="showSection('mahasiswa')" style="display: none;">
+                        <i class="fas fa-user-graduate"></i> Mahasiswa
+                    </a>
+                    <a class="nav-link protected-content" href="#alumni" onclick="showSection('alumni')" style="display: none;">
+                        <i class="fas fa-users"></i> Alumni
+                    </a>
+                    <a class="nav-link protected-content" href="#pekerjaan" onclick="showSection('pekerjaan')" style="display: none;">
+                        <i class="fas fa-briefcase"></i> Pekerjaan
+                    </a>
+                </div>
+                <div class="navbar-nav ms-auto">
+                    <!-- User info when logged in -->
+                    <span id="userInfo" class="navbar-text me-3" style="display: none;">
+                        Welcome, <span id="userName"></span> (<span id="userRole"></span>)
+                    </span>
+                    <!-- Authentication buttons -->
+                    <div id="authButtons">
+                        <a class="btn btn-outline-light me-2" href="/login">
+                            <i class="fas fa-sign-in-alt"></i> Login
+                        </a>
+                        <a class="btn btn-light" href="/register">
+                            <i class="fas fa-user-plus"></i> Register
+                        </a>
+                    </div>
+                    <button id="logoutBtn" class="btn btn-outline-light" style="display: none;" onclick="logout()">
+                        <i class="fas fa-sign-out-alt"></i> Logout
+                    </button>
+                </div>
             </div>
         </div>
     </nav>
 
     <div class="container mt-4">
+        <!-- Alert Container -->
+        <div id="alert-container"></div>
+        
         <!-- Dashboard Section -->
         <div id="dashboard" class="section active">
             <div class="row">
@@ -91,7 +120,7 @@
         <div id="mahasiswa" class="section">
             <div class="d-flex justify-content-between align-items-center mb-4">
                 <h2><i class="fas fa-user-graduate"></i> Data Mahasiswa</h2>
-                <button class="btn btn-primary" onclick="showMahasiswaForm()">
+                <button class="btn btn-primary admin-only" onclick="showMahasiswaForm()" style="display: none;">
                     <i class="fas fa-plus"></i> Tambah Mahasiswa
                 </button>
             </div>
@@ -108,7 +137,7 @@
                                     <th>Jurusan</th>
                                     <th>Angkatan</th>
                                     <th>Email</th>
-                                    <th>Aksi</th>
+                                    <th class="admin-only" style="display: none;">Aksi</th>
                                 </tr>
                             </thead>
                             <tbody id="mahasiswaTableBody">
@@ -123,7 +152,7 @@
         <div id="alumni" class="section">
             <div class="d-flex justify-content-between align-items-center mb-4">
                 <h2><i class="fas fa-users"></i> Data Alumni</h2>
-                <button class="btn btn-success" onclick="showAlumniForm()">
+                <button class="btn btn-success admin-only" onclick="showAlumniForm()" style="display: none;">
                     <i class="fas fa-plus"></i> Tambah Alumni
                 </button>
             </div>
@@ -138,10 +167,9 @@
                                     <th>NIM</th>
                                     <th>Nama</th>
                                     <th>Jurusan</th>
-                                    <th>Angkatan</th>
                                     <th>Tahun Lulus</th>
                                     <th>Email</th>
-                                    <th>Aksi</th>
+                                    <th class="admin-only" style="display: none;">Aksi</th>
                                 </tr>
                             </thead>
                             <tbody id="alumniTableBody">
@@ -156,7 +184,7 @@
         <div id="pekerjaan" class="section">
             <div class="d-flex justify-content-between align-items-center mb-4">
                 <h2><i class="fas fa-briefcase"></i> Data Pekerjaan Alumni</h2>
-                <button class="btn btn-warning" onclick="showPekerjaanForm()">
+                <button class="btn btn-warning admin-only" onclick="showPekerjaanForm()" style="display: none;">
                     <i class="fas fa-plus"></i> Tambah Pekerjaan
                 </button>
             </div>
@@ -174,7 +202,7 @@
                                     <th>Bidang</th>
                                     <th>Lokasi</th>
                                     <th>Status</th>
-                                    <th>Aksi</th>
+                                    <th class="admin-only" style="display: none;">Aksi</th>
                                 </tr>
                             </thead>
                             <tbody id="pekerjaanTableBody">
@@ -361,6 +389,194 @@
     </div>
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
-    <script src="/static/js/script.js"></script>
+    <script src="/static/js/script_new.js"></script>
+    
+    <!-- Authentication JavaScript -->
+    <script>
+        // Check authentication status on page load
+        window.addEventListener('load', function() {
+            checkAuthStatus();
+        });
+        
+        function checkAuthStatus() {
+            const token = localStorage.getItem('token');
+            if (!token) {
+                // Redirect to login if no token
+                window.location.href = '/login';
+                return;
+            }
+            
+            // Validate token with server
+            fetch('/api/profile', {
+                headers: {
+                    'Authorization': 'Bearer ' + token
+                }
+            })
+            .then(response => {
+                if (response.ok) {
+                    return response.json();
+                } else if (response.status === 401) {
+                    // Token invalid or expired
+                    throw new Error('Token invalid');
+                } else {
+                    throw new Error('Server error');
+                }
+            })
+            .then(data => {
+                showAuthenticatedState(data.user);
+            })
+            .catch(error => {
+                console.error('Auth check failed:', error);
+                // Clear invalid token and redirect to login
+                localStorage.removeItem('token');
+                window.location.href = '/login';
+            });
+        }
+        
+        function showAuthenticatedState(user) {
+            // Hide auth buttons, show user info and logout
+            document.getElementById('authButtons').style.display = 'none';
+            document.getElementById('userInfo').style.display = 'inline';
+            document.getElementById('logoutBtn').style.display = 'inline-block';
+            
+            // Set user info
+            document.getElementById('userName').textContent = user.username;
+            document.getElementById('userRole').textContent = user.role;
+            
+            // Show protected content
+            document.querySelectorAll('.protected-content').forEach(element => {
+                element.style.display = 'block';
+            });
+            
+            // Load dashboard data
+            loadDashboardData();
+        }
+        
+        function showUnauthenticatedState() {
+            // Show auth buttons, hide user info and logout
+            document.getElementById('authButtons').style.display = 'flex';
+            document.getElementById('userInfo').style.display = 'none';
+            document.getElementById('logoutBtn').style.display = 'none';
+            
+            // Hide protected content
+            document.querySelectorAll('.protected-content').forEach(element => {
+                element.style.display = 'none';
+            });
+            
+            // Show login prompt on dashboard
+            showLoginPrompt();
+        }
+        
+        function logout() {
+            const token = localStorage.getItem('token');
+            
+            // Call logout endpoint
+            if (token) {
+                fetch('/api/logout', {
+                    method: 'POST',
+                    headers: {
+                        'Authorization': 'Bearer ' + token
+                    }
+                }).catch(error => {
+                    console.log('Logout API call failed:', error);
+                });
+            }
+            
+            // Remove token
+            localStorage.removeItem('token');
+            
+            // Redirect to login
+            window.location.href = '/login';
+        }
+        
+        function showLoginPrompt() {
+            const dashboardContent = document.getElementById('dashboard');
+            if (dashboardContent) {
+                dashboardContent.innerHTML = `
+                    <div class="row justify-content-center">
+                        <div class="col-md-8 text-center">
+                            <div class="card">
+                                <div class="card-body p-5">
+                                    <i class="fas fa-lock fa-4x text-muted mb-4"></i>
+                                    <h2 class="mb-3">Welcome to CRUD Management System</h2>
+                                    <p class="text-muted mb-4">Please login to access the dashboard and manage your data.</p>
+                                    <div class="d-grid gap-2 d-md-block">
+                                        <a href="/login" class="btn btn-primary btn-lg">
+                                            <i class="fas fa-sign-in-alt me-2"></i>Login
+                                        </a>
+                                        <a href="/register" class="btn btn-outline-primary btn-lg">
+                                            <i class="fas fa-user-plus me-2"></i>Register
+                                        </a>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                `;
+            }
+        }
+        
+        function loadDashboardData() {
+            const token = localStorage.getItem('token');
+            if (!token) return;
+            
+            // Restore original dashboard content if needed
+            const dashboardContent = document.getElementById('dashboard');
+            if (dashboardContent && !dashboardContent.querySelector('#totalMahasiswa')) {
+                location.reload(); // Reload to get original content
+                return;
+            }
+            
+            // Load count data
+            const headers = {
+                'Authorization': 'Bearer ' + token
+            };
+            
+            // Load mahasiswa count
+            fetch('/api/mahasiswa/count', { headers })
+                .then(response => response.json())
+                .then(data => {
+                    document.getElementById('totalMahasiswa').textContent = data.count || 0;
+                })
+                .catch(error => console.error('Error loading mahasiswa count:', error));
+            
+            // Load alumni count
+            fetch('/api/alumni/count', { headers })
+                .then(response => response.json())
+                .then(data => {
+                    document.getElementById('totalAlumni').textContent = data.count || 0;
+                })
+                .catch(error => console.error('Error loading alumni count:', error));
+            
+            // Load pekerjaan count
+            fetch('/api/pekerjaan/count', { headers })
+                .then(response => response.json())
+                .then(data => {
+                    document.getElementById('totalPekerjaan').textContent = data.count || 0;
+                })
+                .catch(error => console.error('Error loading pekerjaan count:', error));
+        }
+        
+        function showAlert(type, message, icon) {
+            // Create alert if container exists
+            const alertContainer = document.getElementById('alert-container');
+            if (alertContainer) {
+                const alert = document.createElement('div');
+                alert.className = `alert alert-${type} alert-dismissible fade show`;
+                alert.innerHTML = `
+                    <i class="${icon} me-2"></i>
+                    ${message}
+                    <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                `;
+                alertContainer.appendChild(alert);
+                
+                setTimeout(() => {
+                    if (alert.parentNode) {
+                        alert.remove();
+                    }
+                }, 5000);
+            }
+        }
+    </script>
 </body>
 </html>

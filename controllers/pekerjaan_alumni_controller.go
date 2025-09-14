@@ -100,3 +100,32 @@ func (ctrl *PekerjaanAlumniController) DeletePekerjaanAlumni(c *fiber.Ctx) error
 
 	return c.SendStatus(204)
 }
+
+func (ctrl *PekerjaanAlumniController) GetPekerjaanAlumniCount(c *fiber.Ctx) error {
+	count, err := ctrl.pekerjaanUsecase.CountPekerjaanAlumni()
+	if err != nil {
+		return c.Status(500).JSON(fiber.Map{"error": err.Error()})
+	}
+
+	return c.JSON(fiber.Map{
+		"total_pekerjaan_alumni": count,
+	})
+}
+
+func (ctrl *PekerjaanAlumniController) GetAlumniCountByCompany(c *fiber.Ctx) error {
+	namaPerusahaan := c.Params("nama_perusahaan")
+	if namaPerusahaan == "" {
+		return c.Status(400).JSON(fiber.Map{"error": "Nama perusahaan tidak boleh kosong"})
+	}
+
+	count, err := ctrl.pekerjaanUsecase.GetAlumniCountByCompany(namaPerusahaan)
+	if err != nil {
+		return c.Status(500).JSON(fiber.Map{"error": err.Error()})
+	}
+
+	return c.JSON(fiber.Map{
+		"nama_perusahaan": namaPerusahaan,
+		"jumlah_alumni": count,
+		"message": "Data jumlah alumni di perusahaan berhasil diambil",
+	})
+}

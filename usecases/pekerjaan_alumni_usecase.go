@@ -12,6 +12,8 @@ type PekerjaanAlumniUsecase interface {
 	CreatePekerjaanAlumni(pekerjaan *models.PekerjaanAlumni) (*models.PekerjaanAlumni, error)
 	UpdatePekerjaanAlumni(id uint, pekerjaan *models.PekerjaanAlumni) (*models.PekerjaanAlumni, error)
 	DeletePekerjaanAlumni(id uint) error
+	CountPekerjaanAlumni() (int64, error)
+	GetAlumniCountByCompany(namaPerusahaan string) (int64, error)
 }
 
 type pekerjaanAlumniUsecase struct {
@@ -71,4 +73,12 @@ func (u *pekerjaanAlumniUsecase) UpdatePekerjaanAlumni(id uint, updatedPekerjaan
 
 func (u *pekerjaanAlumniUsecase) DeletePekerjaanAlumni(id uint) error {
 	return u.pekerjaanRepo.Delete(id)
+}
+
+func (u *pekerjaanAlumniUsecase) CountPekerjaanAlumni() (int64, error) {
+	return u.pekerjaanRepo.Count()
+}
+
+func (u *pekerjaanAlumniUsecase) GetAlumniCountByCompany(namaPerusahaan string) (int64, error) {
+	return u.pekerjaanRepo.GetAlumniCountByCompany(namaPerusahaan)
 }

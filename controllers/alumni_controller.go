@@ -86,3 +86,26 @@ func (ctrl *AlumniController) DeleteAlumni(c *fiber.Ctx) error {
 
 	return c.SendStatus(204)
 }
+
+func (ctrl *AlumniController) CountAlumni(c *fiber.Ctx) error {
+	count, err := ctrl.alumniUsecase.CountAlumni()
+	if err != nil {
+		return c.Status(500).JSON(fiber.Map{"error": err.Error()})
+	}
+
+	return c.JSON(fiber.Map{
+		"count": count,
+		"message": "Total jumlah alumni",
+	})
+}
+
+func (ctrl *AlumniController) GetAlumniCount(c *fiber.Ctx) error {
+	count, err := ctrl.alumniUsecase.CountAlumni()
+	if err != nil {
+		return c.Status(500).JSON(fiber.Map{"error": err.Error()})
+	}
+
+	return c.JSON(fiber.Map{
+		"total_alumni": count,
+	})
+}

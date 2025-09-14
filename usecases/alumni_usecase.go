@@ -11,6 +11,7 @@ type AlumniUsecase interface {
 	CreateAlumni(alumni *models.Alumni) (*models.Alumni, error)
 	UpdateAlumni(id uint, alumni *models.Alumni) (*models.Alumni, error)
 	DeleteAlumni(id uint) error
+	CountAlumni() (int64, error)
 }
 
 type alumniUsecase struct {
@@ -63,4 +64,8 @@ func (u *alumniUsecase) UpdateAlumni(id uint, updatedAlumni *models.Alumni) (*mo
 
 func (u *alumniUsecase) DeleteAlumni(id uint) error {
 	return u.alumniRepo.Delete(id)
+}
+
+func (u *alumniUsecase) CountAlumni() (int64, error) {
+	return u.alumniRepo.Count()
 }

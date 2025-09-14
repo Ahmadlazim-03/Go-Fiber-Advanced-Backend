@@ -86,3 +86,14 @@ func (ctrl *MahasiswaController) DeleteMahasiswa(c *fiber.Ctx) error {
 
 	return c.SendStatus(204)
 }
+
+func (ctrl *MahasiswaController) GetMahasiswaCount(c *fiber.Ctx) error {
+	count, err := ctrl.mahasiswaUsecase.CountMahasiswa()
+	if err != nil {
+		return c.Status(500).JSON(fiber.Map{"error": err.Error()})
+	}
+
+	return c.JSON(fiber.Map{
+		"total_mahasiswa": count,
+	})
+}

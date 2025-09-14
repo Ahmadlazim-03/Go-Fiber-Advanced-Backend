@@ -12,6 +12,7 @@ type AlumniRepository interface {
 	Create(alumni *models.Alumni) error
 	Update(alumni *models.Alumni) error
 	Delete(id uint) error
+	Count() (int64, error)
 }
 
 type alumniRepository struct {
@@ -47,4 +48,10 @@ func (r *alumniRepository) Update(alumni *models.Alumni) error {
 
 func (r *alumniRepository) Delete(id uint) error {
 	return r.db.Delete(&models.Alumni{}, id).Error
+}
+
+func (r *alumniRepository) Count() (int64, error) {
+	var count int64
+	err := r.db.Model(&models.Alumni{}).Count(&count).Error
+	return count, err
 }
