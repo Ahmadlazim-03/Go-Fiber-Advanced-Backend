@@ -14,7 +14,7 @@ func HashPassword(password string) (string, error) {
 }
 
 // CheckPassword memvalidasi password dengan hash yang tersimpan
-func CheckPassword(hashedPassword, password string) bool {
+func CheckPassword(password, hashedPassword string) bool {
 	err := bcrypt.CompareHashAndPassword([]byte(hashedPassword), []byte(password))
 	return err == nil
 }

@@ -448,6 +448,18 @@
                 element.style.display = 'block';
             });
             
+            // Show admin-only elements if user is admin
+            if (user.role === 'admin') {
+                document.querySelectorAll('.admin-only').forEach(element => {
+                    element.style.display = element.tagName === 'TH' ? 'table-cell' : 'inline-block';
+                });
+            } else {
+                // Hide admin-only elements for non-admin users
+                document.querySelectorAll('.admin-only').forEach(element => {
+                    element.style.display = 'none';
+                });
+            }
+            
             // Load dashboard data
             loadDashboardData();
         }
@@ -460,6 +472,11 @@
             
             // Hide protected content
             document.querySelectorAll('.protected-content').forEach(element => {
+                element.style.display = 'none';
+            });
+            
+            // Hide admin-only elements
+            document.querySelectorAll('.admin-only').forEach(element => {
                 element.style.display = 'none';
             });
             

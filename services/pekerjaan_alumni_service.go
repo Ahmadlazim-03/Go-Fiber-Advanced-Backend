@@ -2,24 +2,24 @@ package services
 
 import (
 	"modul4crud/models"
-	"modul4crud/usecases"
+	"modul4crud/repositories"
 	"strconv"
 
 	"github.com/gofiber/fiber/v2"
 )
 
 type PekerjaanAlumniService struct {
-	pekerjaanUsecase usecases.PekerjaanAlumniUsecase
+	pekerjaanRepo repositories.PekerjaanAlumniRepository
 }
 
-func NewPekerjaanAlumniService(pekerjaanUsecase usecases.PekerjaanAlumniUsecase) *PekerjaanAlumniService {
+func NewPekerjaanAlumniService(pekerjaanRepo repositories.PekerjaanAlumniRepository) *PekerjaanAlumniService {
 	return &PekerjaanAlumniService{
-		pekerjaanUsecase: pekerjaanUsecase,
+		pekerjaanRepo: pekerjaanRepo,
 	}
 }
 
 func (s *PekerjaanAlumniService) GetPekerjaanAlumnis(c *fiber.Ctx) error {
-	pekerjaans, err := s.pekerjaanUsecase.GetAllPekerjaanAlumni()
+	pekerjaans, err := s.pekerjaanRepo.GetAll()
 	if err != nil {
 		return c.Status(500).JSON(fiber.Map{"error": err.Error()})
 	}
@@ -32,12 +32,12 @@ func (s *PekerjaanAlumniService) CreatePekerjaanAlumni(c *fiber.Ctx) error {
 		return c.Status(400).JSON(fiber.Map{"error": err.Error()})
 	}
 
-	result, err := s.pekerjaanUsecase.CreatePekerjaanAlumni(&pekerjaan)
+	err := s.pekerjaanRepo.Create(&pekerjaan)
 	if err != nil {
 		return c.Status(500).JSON(fiber.Map{"error": err.Error()})
 	}
 
-	return c.JSON(result)
+	return c.JSON(pekerjaan)
 }
 
 func (s *PekerjaanAlumniService) GetPekerjaanAlumni(c *fiber.Ctx) error {
@@ -46,7 +46,7 @@ func (s *PekerjaanAlumniService) GetPekerjaanAlumni(c *fiber.Ctx) error {
 		return c.Status(400).JSON(fiber.Map{"error": "Invalid ID"})
 	}
 
-	pekerjaan, err := s.pekerjaanUsecase.GetPekerjaanAlumniByID(uint(id))
+	pekerjaan, err := s.pekerjaanRepo.GetByID(uint(id))
 	if err != nil {
 		return c.Status(404).JSON(fiber.Map{"error": "Pekerjaan not found"})
 	}
@@ -60,7 +60,7 @@ func (s *PekerjaanAlumniService) GetPekerjaanByAlumni(c *fiber.Ctx) error {
 		return c.Status(400).JSON(fiber.Map{"error": "Invalid Alumni ID"})
 	}
 
-	pekerjaans, err := s.pekerjaanUsecase.GetPekerjaanByAlumniID(uint(alumniID))
+	pekerjaans, err := s.pekerjaanRepo.GetByAlumniID(uint(alumniID))
 	if err != nil {
 		return c.Status(500).JSON(fiber.Map{"error": err.Error()})
 	}
@@ -74,17 +74,35 @@ func (s *PekerjaanAlumniService) UpdatePekerjaanAlumni(c *fiber.Ctx) error {
 		return c.Status(400).JSON(fiber.Map{"error": "Invalid ID"})
 	}
 
-	var pekerjaan models.PekerjaanAlumni
-	if err := c.BodyParser(&pekerjaan); err != nil {
+	var updatedPekerjaan models.PekerjaanAlumni
+	if err := c.BodyParser(&updatedPekerjaan); err != nil {
 		return c.Status(400).JSON(fiber.Map{"error": err.Error()})
 	}
 
-	result, err := s.pekerjaanUsecase.UpdatePekerjaanAlumni(uint(id), &pekerjaan)
+	// Get existing pekerjaan
+	pekerjaan, err := s.pekerjaanRepo.GetByID(uint(id))
+	if err != nil {
+		return c.Status(404).JSON(fiber.Map{"error": "Pekerjaan not found"})
+	}
+
+	// Update fields (business logic from usecase)
+	pekerjaan.AlumniID = updatedPekerjaan.AlumniID
+	pekerjaan.NamaPerusahaan = updatedPekerjaan.NamaPerusahaan
+	pekerjaan.PosisiJabatan = updatedPekerjaan.PosisiJabatan
+	pekerjaan.BidangIndustri = updatedPekerjaan.BidangIndustri
+	pekerjaan.LokasiKerja = updatedPekerjaan.LokasiKerja
+	pekerjaan.GajiRange = updatedPekerjaan.GajiRange
+	pekerjaan.TanggalMulaiKerja = updatedPekerjaan.TanggalMulaiKerja
+	pekerjaan.TanggalSelesaiKerja = updatedPekerjaan.TanggalSelesaiKerja
+	pekerjaan.StatusPekerjaan = updatedPekerjaan.StatusPekerjaan
+	pekerjaan.DeskripsiPekerjaan = updatedPekerjaan.DeskripsiPekerjaan
+
+	err = s.pekerjaanRepo.Update(pekerjaan)
 	if err != nil {
 		return c.Status(500).JSON(fiber.Map{"error": err.Error()})
 	}
 
-	return c.JSON(result)
+	return c.JSON(pekerjaan)
 }
 
 func (s *PekerjaanAlumniService) DeletePekerjaanAlumni(c *fiber.Ctx) error {
@@ -93,7 +111,7 @@ func (s *PekerjaanAlumniService) DeletePekerjaanAlumni(c *fiber.Ctx) error {
 		return c.Status(400).JSON(fiber.Map{"error": "Invalid ID"})
 	}
 
-	err = s.pekerjaanUsecase.DeletePekerjaanAlumni(uint(id))
+	err = s.pekerjaanRepo.Delete(uint(id))
 	if err != nil {
 		return c.Status(500).JSON(fiber.Map{"error": err.Error()})
 	}
@@ -102,7 +120,7 @@ func (s *PekerjaanAlumniService) DeletePekerjaanAlumni(c *fiber.Ctx) error {
 }
 
 func (s *PekerjaanAlumniService) GetPekerjaanAlumniCount(c *fiber.Ctx) error {
-	count, err := s.pekerjaanUsecase.CountPekerjaanAlumni()
+	count, err := s.pekerjaanRepo.Count()
 	if err != nil {
 		return c.Status(500).JSON(fiber.Map{"error": err.Error()})
 	}
@@ -118,7 +136,7 @@ func (s *PekerjaanAlumniService) GetAlumniCountByCompany(c *fiber.Ctx) error {
 		return c.Status(400).JSON(fiber.Map{"error": "Nama perusahaan tidak boleh kosong"})
 	}
 
-	count, err := s.pekerjaanUsecase.GetAlumniCountByCompany(namaPerusahaan)
+	count, err := s.pekerjaanRepo.GetAlumniCountByCompany(namaPerusahaan)
 	if err != nil {
 		return c.Status(500).JSON(fiber.Map{"error": err.Error()})
 	}

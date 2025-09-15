@@ -1,21 +1,23 @@
 package services
 
 import (
+	"fmt"
 	"modul4crud/middleware"
 	"modul4crud/models"
-	"modul4crud/usecases"
+	"modul4crud/repositories"
+	"modul4crud/utils"
 	"strconv"
 
 	"github.com/gofiber/fiber/v2"
 )
 
 type AuthService struct {
-	authUsecase usecases.AuthUsecase
+	userRepo repositories.UserRepository
 }
 
-func NewAuthService(authUsecase usecases.AuthUsecase) *AuthService {
+func NewAuthService(userRepo repositories.UserRepository) *AuthService {
 	return &AuthService{
-		authUsecase: authUsecase,
+		userRepo: userRepo,
 	}
 }
 
@@ -28,10 +30,55 @@ func (s *AuthService) Register(c *fiber.Ctx) error {
 		})
 	}
 
-	user, err := s.authUsecase.Register(&req)
-	if err != nil {
+	// Business logic moved from usecase
+	// Validasi input
+	if req.Username == "" || req.Email == "" || req.Password == "" {
 		return c.Status(400).JSON(fiber.Map{
-			"error": err.Error(),
+			"error": "Username, email, dan password wajib diisi",
+		})
+	}
+
+	// Cek apakah user sudah ada
+	existingUser, _ := s.userRepo.GetByUsername(req.Username)
+	if existingUser != nil {
+		return c.Status(400).JSON(fiber.Map{
+			"error": "Username sudah digunakan",
+		})
+	}
+
+	existingUser, _ = s.userRepo.GetByEmail(req.Email)
+	if existingUser != nil {
+		return c.Status(400).JSON(fiber.Map{
+			"error": "Email sudah digunakan",
+		})
+	}
+
+	// Hash password
+	hashedPassword, err := utils.HashPassword(req.Password)
+	if err != nil {
+		return c.Status(500).JSON(fiber.Map{
+			"error": "Gagal mengenkripsi password",
+		})
+	}
+
+	// Create user
+	user := &models.User{
+		Username: req.Username,
+		Email:    req.Email,
+		Password: hashedPassword,
+		Role:     req.Role,
+		IsActive: true,
+	}
+
+	// Validasi role - default ke user jika kosong atau tidak valid
+	if user.Role != models.RoleAdmin && user.Role != models.RoleUser {
+		user.Role = models.RoleUser
+	}
+
+	err = s.userRepo.Create(user)
+	if err != nil {
+		return c.Status(500).JSON(fiber.Map{
+			"error": "Gagal mendaftarkan user",
 		})
 	}
 
@@ -50,17 +97,69 @@ func (s *AuthService) Login(c *fiber.Ctx) error {
 		})
 	}
 
-	response, err := s.authUsecase.Login(&req)
-	if err != nil {
-		return c.Status(401).JSON(fiber.Map{
-			"error": err.Error(),
+	// Debug logging
+	fmt.Printf("LOGIN DEBUG - Email: %s, Password: %s\n", req.Email, req.Password)
+
+	// Business logic moved from usecase
+	// Validasi input
+	if req.Email == "" || req.Password == "" {
+		fmt.Println("LOGIN DEBUG - Email atau password kosong")
+		return c.Status(400).JSON(fiber.Map{
+			"error": "Email dan password wajib diisi",
 		})
 	}
 
+	// Cari user berdasarkan email
+	user, err := s.userRepo.GetByEmail(req.Email)
+	if err != nil {
+		fmt.Printf("LOGIN DEBUG - User tidak ditemukan untuk email: %s, Error: %v\n", req.Email, err)
+		return c.Status(401).JSON(fiber.Map{
+			"error": "Email atau password salah",
+		})
+	}
+
+	fmt.Printf("LOGIN DEBUG - User ditemukan: %+v\n", user)
+
+	// Cek apakah user aktif
+	if !user.IsActive {
+		fmt.Println("LOGIN DEBUG - User tidak aktif")
+		return c.Status(401).JSON(fiber.Map{
+			"error": "Akun tidak aktif",
+		})
+	}
+
+	// Verify password
+	passwordValid := utils.CheckPassword(req.Password, user.Password)
+	fmt.Printf("LOGIN DEBUG - Password valid: %v\n", passwordValid)
+	
+	if !passwordValid {
+		fmt.Println("LOGIN DEBUG - Password tidak cocok")
+		return c.Status(401).JSON(fiber.Map{
+			"error": "Email atau password salah",
+		})
+	}
+
+	// Generate JWT token
+	token, err := utils.GenerateJWT(user)
+	if err != nil {
+		fmt.Println("LOGIN DEBUG - Gagal membuat token")
+		return c.Status(500).JSON(fiber.Map{
+			"error": "Gagal membuat token",
+		})
+	}
+
+	response := &models.LoginResponse{
+		User:  *user,
+		Token: token,
+	}
+
+	fmt.Println("LOGIN DEBUG - Login berhasil, mengirim response")
 	return c.JSON(fiber.Map{
 		"message": "Login successful",
-		"token":   response.Token,
-		"user":    response.User,
+		"data": fiber.Map{
+			"token": response.Token,
+			"user":  response.User,
+		},
 	})
 }
 
@@ -68,7 +167,7 @@ func (s *AuthService) Login(c *fiber.Ctx) error {
 func (s *AuthService) GetProfile(c *fiber.Ctx) error {
 	userInfo := middleware.GetUserFromContext(c)
 
-	user, err := s.authUsecase.GetUserByID(userInfo.UserID)
+	user, err := s.userRepo.GetByID(userInfo.UserID)
 	if err != nil {
 		return c.Status(404).JSON(fiber.Map{
 			"error": "User tidak ditemukan",
@@ -82,7 +181,7 @@ func (s *AuthService) GetProfile(c *fiber.Ctx) error {
 
 // GetUsers endpoint untuk mendapatkan semua user (admin only)
 func (s *AuthService) GetUsers(c *fiber.Ctx) error {
-	users, err := s.authUsecase.GetAllUsers()
+	users, err := s.userRepo.GetAll()
 	if err != nil {
 		return c.Status(500).JSON(fiber.Map{
 			"error": err.Error(),
@@ -104,7 +203,7 @@ func (s *AuthService) GetUser(c *fiber.Ctx) error {
 		})
 	}
 
-	user, err := s.authUsecase.GetUserByID(id)
+	user, err := s.userRepo.GetByID(id)
 	if err != nil {
 		return c.Status(404).JSON(fiber.Map{
 			"error": "User tidak ditemukan",
@@ -125,14 +224,52 @@ func (s *AuthService) UpdateUser(c *fiber.Ctx) error {
 		})
 	}
 
-	var user models.User
-	if err := c.BodyParser(&user); err != nil {
+	var updatedUser models.User
+	if err := c.BodyParser(&updatedUser); err != nil {
 		return c.Status(400).JSON(fiber.Map{
 			"error": "Data request tidak valid",
 		})
 	}
 
-	updatedUser, err := s.authUsecase.UpdateUser(id, &user)
+	// Business logic moved from usecase
+	user, err := s.userRepo.GetByID(id)
+	if err != nil {
+		return c.Status(404).JSON(fiber.Map{
+			"error": "User tidak ditemukan",
+		})
+	}
+
+	// Update fields yang diizinkan
+	if updatedUser.Username != "" {
+		user.Username = updatedUser.Username
+	}
+	if updatedUser.Email != "" {
+		user.Email = updatedUser.Email
+	}
+	if updatedUser.Role != "" {
+		// Validasi role - hanya admin dan user
+		if updatedUser.Role != models.RoleUser && updatedUser.Role != models.RoleAdmin {
+			return c.Status(400).JSON(fiber.Map{
+				"error": "Role tidak valid. Hanya 'admin' dan 'user' yang diizinkan",
+			})
+		}
+		user.Role = updatedUser.Role
+	}
+
+	user.IsActive = updatedUser.IsActive
+
+	// Hash password baru jika ada
+	if updatedUser.Password != "" {
+		hashedPassword, err := utils.HashPassword(updatedUser.Password)
+		if err != nil {
+			return c.Status(500).JSON(fiber.Map{
+				"error": "Gagal mengenkripsi password",
+			})
+		}
+		user.Password = hashedPassword
+	}
+
+	err = s.userRepo.Update(user)
 	if err != nil {
 		return c.Status(500).JSON(fiber.Map{
 			"error": err.Error(),
@@ -141,7 +278,7 @@ func (s *AuthService) UpdateUser(c *fiber.Ctx) error {
 
 	return c.JSON(fiber.Map{
 		"message": "User berhasil diupdate",
-		"user":    updatedUser,
+		"user":    user,
 	})
 }
 
@@ -154,7 +291,7 @@ func (s *AuthService) DeleteUser(c *fiber.Ctx) error {
 		})
 	}
 
-	err = s.authUsecase.DeleteUser(id)
+	err = s.userRepo.Delete(id)
 	if err != nil {
 		return c.Status(500).JSON(fiber.Map{
 			"error": err.Error(),
@@ -168,7 +305,7 @@ func (s *AuthService) DeleteUser(c *fiber.Ctx) error {
 
 // GetUsersCount endpoint untuk mendapatkan jumlah user (admin only)
 func (s *AuthService) GetUsersCount(c *fiber.Ctx) error {
-	count, err := s.authUsecase.CountUsers()
+	count, err := s.userRepo.Count()
 	if err != nil {
 		return c.Status(500).JSON(fiber.Map{
 			"error": err.Error(),

@@ -2,24 +2,24 @@ package services
 
 import (
 	"modul4crud/models"
-	"modul4crud/usecases"
+	"modul4crud/repositories"
 	"strconv"
 
 	"github.com/gofiber/fiber/v2"
 )
 
 type MahasiswaService struct {
-	mahasiswaUsecase usecases.MahasiswaUsecase
+	mahasiswaRepo repositories.MahasiswaRepository
 }
 
-func NewMahasiswaService(mahasiswaUsecase usecases.MahasiswaUsecase) *MahasiswaService {
+func NewMahasiswaService(mahasiswaRepo repositories.MahasiswaRepository) *MahasiswaService {
 	return &MahasiswaService{
-		mahasiswaUsecase: mahasiswaUsecase,
+		mahasiswaRepo: mahasiswaRepo,
 	}
 }
 
 func (s *MahasiswaService) GetMahasiswas(c *fiber.Ctx) error {
-	mahasiswas, err := s.mahasiswaUsecase.GetAllMahasiswa()
+	mahasiswas, err := s.mahasiswaRepo.GetAll()
 	if err != nil {
 		return c.Status(500).JSON(fiber.Map{"error": err.Error()})
 	}
@@ -32,7 +32,16 @@ func (s *MahasiswaService) CreateMahasiswa(c *fiber.Ctx) error {
 		return c.Status(400).JSON(fiber.Map{"error": err.Error()})
 	}
 
-	mahasiswa, err := s.mahasiswaUsecase.CreateMahasiswa(&req)
+	// Convert request to model (business logic from usecase)
+	mahasiswa := &models.Mahasiswa{
+		NIM:      req.NIM,
+		Nama:     req.Nama,
+		Email:    req.Email,
+		Jurusan:  req.Jurusan,
+		Angkatan: req.Angkatan,
+	}
+
+	err := s.mahasiswaRepo.Create(mahasiswa)
 	if err != nil {
 		return c.Status(500).JSON(fiber.Map{"error": err.Error()})
 	}
@@ -46,7 +55,7 @@ func (s *MahasiswaService) GetMahasiswa(c *fiber.Ctx) error {
 		return c.Status(400).JSON(fiber.Map{"error": "Invalid ID"})
 	}
 
-	mahasiswa, err := s.mahasiswaUsecase.GetMahasiswaByID(uint(id))
+	mahasiswa, err := s.mahasiswaRepo.GetByID(uint(id))
 	if err != nil {
 		return c.Status(404).JSON(fiber.Map{"error": "Mahasiswa not found"})
 	}
@@ -65,7 +74,19 @@ func (s *MahasiswaService) UpdateMahasiswa(c *fiber.Ctx) error {
 		return c.Status(400).JSON(fiber.Map{"error": err.Error()})
 	}
 
-	mahasiswa, err := s.mahasiswaUsecase.UpdateMahasiswa(uint(id), &req)
+	// Get existing mahasiswa
+	mahasiswa, err := s.mahasiswaRepo.GetByID(uint(id))
+	if err != nil {
+		return c.Status(404).JSON(fiber.Map{"error": "Mahasiswa not found"})
+	}
+
+	// Update fields (business logic from usecase)
+	mahasiswa.Nama = req.Nama
+	mahasiswa.Email = req.Email
+	mahasiswa.Jurusan = req.Jurusan
+	mahasiswa.Angkatan = req.Angkatan
+
+	err = s.mahasiswaRepo.Update(mahasiswa)
 	if err != nil {
 		return c.Status(500).JSON(fiber.Map{"error": err.Error()})
 	}
@@ -79,7 +100,7 @@ func (s *MahasiswaService) DeleteMahasiswa(c *fiber.Ctx) error {
 		return c.Status(400).JSON(fiber.Map{"error": "Invalid ID"})
 	}
 
-	err = s.mahasiswaUsecase.DeleteMahasiswa(uint(id))
+	err = s.mahasiswaRepo.Delete(uint(id))
 	if err != nil {
 		return c.Status(500).JSON(fiber.Map{"error": err.Error()})
 	}
@@ -88,7 +109,7 @@ func (s *MahasiswaService) DeleteMahasiswa(c *fiber.Ctx) error {
 }
 
 func (s *MahasiswaService) GetMahasiswaCount(c *fiber.Ctx) error {
-	count, err := s.mahasiswaUsecase.CountMahasiswa()
+	count, err := s.mahasiswaRepo.Count()
 	if err != nil {
 		return c.Status(500).JSON(fiber.Map{"error": err.Error()})
 	}

@@ -7,7 +7,6 @@ import (
 	"modul4crud/repositories"
 	"modul4crud/routes"
 	"modul4crud/services"
-	"modul4crud/usecases"
 	"modul4crud/utils"
 
 	"github.com/gofiber/fiber/v2"
@@ -70,6 +69,16 @@ func main() {
 		return c.SendFile("./templates/debug.html")
 	})
 
+	// Debug route untuk melihat semua users
+	app.Get("/debug/users", func(c *fiber.Ctx) error {
+		var users []models.User
+		database.DB.Find(&users)
+		return c.JSON(fiber.Map{
+			"users": users,
+			"count": len(users),
+		})
+	})
+
 	// Initialize database connection
 	database.ConnectDB()
 
@@ -85,17 +94,11 @@ func main() {
 	alumniRepo := repositories.NewAlumniRepository(database.DB)
 	pekerjaanRepo := repositories.NewPekerjaanAlumniRepository(database.DB)
 
-	// Initialize usecases
-	authUsecase := usecases.NewAuthUsecase(userRepo)
-	mahasiswaUsecase := usecases.NewMahasiswaUsecase(mahasiswaRepo)
-	alumniUsecase := usecases.NewAlumniUsecase(alumniRepo)
-	pekerjaanUsecase := usecases.NewPekerjaanAlumniUsecase(pekerjaanRepo)
-
-	// Initialize services
-	authService := services.NewAuthService(authUsecase)
-	mahasiswaService := services.NewMahasiswaService(mahasiswaUsecase)
-	alumniService := services.NewAlumniService(alumniUsecase)
-	pekerjaanService := services.NewPekerjaanAlumniService(pekerjaanUsecase)
+	// Initialize services - all with direct repository access
+	authService := services.NewAuthService(userRepo)
+	mahasiswaService := services.NewMahasiswaService(mahasiswaRepo) // Direct repository
+	alumniService := services.NewAlumniService(alumniRepo) // Direct repository
+	pekerjaanService := services.NewPekerjaanAlumniService(pekerjaanRepo) // Direct repository
 
 	// Protected dashboard route - perlu autentikasi JWT
 	app.Get("/dashboard", func(c *fiber.Ctx) error {
