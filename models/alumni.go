@@ -16,7 +16,7 @@ type Alumni struct {
 	Alamat     string            `gorm:"type:text" json:"alamat"`
 	CreatedAt  time.Time         `gorm:"autoCreateTime" json:"created_at"`
 	UpdatedAt  time.Time         `gorm:"autoUpdateTime" json:"updated_at"`
-	Pekerjaan  []PekerjaanAlumni `gorm:"foreignKey:AlumniID" json:"pekerjaan_alumni"`	
+	Pekerjaan  []PekerjaanAlumni `gorm:"foreignKey:AlumniID" json:"pekerjaan_alumni"`
 }
 
 // Model Pekerjaan Alumni

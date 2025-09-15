@@ -125,7 +125,7 @@ func (s *PekerjaanAlumniService) GetAlumniCountByCompany(c *fiber.Ctx) error {
 
 	return c.JSON(fiber.Map{
 		"nama_perusahaan": namaPerusahaan,
-		"jumlah_alumni": count,
-		"message": "Data jumlah alumni di perusahaan berhasil diambil",
+		"jumlah_alumni":   count,
+		"message":         "Data jumlah alumni di perusahaan berhasil diambil",
 	})
 }

@@ -94,7 +94,7 @@ func (s *AlumniService) CountAlumni(c *fiber.Ctx) error {
 	}
 
 	return c.JSON(fiber.Map{
-		"count": count,
+		"count":   count,
 		"message": "Total jumlah alumni",
 	})
 }

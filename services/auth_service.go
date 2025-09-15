@@ -67,7 +67,7 @@ func (s *AuthService) Login(c *fiber.Ctx) error {
 // GetProfile endpoint untuk mendapatkan profil user yang sedang login
 func (s *AuthService) GetProfile(c *fiber.Ctx) error {
 	userInfo := middleware.GetUserFromContext(c)
-	
+
 	user, err := s.authUsecase.GetUserByID(userInfo.UserID)
 	if err != nil {
 		return c.Status(404).JSON(fiber.Map{

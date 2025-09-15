@@ -66,11 +66,11 @@ func (r *pekerjaanAlumniRepository) Count() (int64, error) {
 
 func (r *pekerjaanAlumniRepository) GetAlumniCountByCompany(namaPerusahaan string) (int64, error) {
 	var count int64
-	
+
 	err := r.db.Table("pekerjaan_alumnis").
 		Where("nama_perusahaan = ?", namaPerusahaan).
 		Select("COUNT(DISTINCT alumni_id)").
 		Count(&count).Error
-	
+
 	return count, err
 }

@@ -139,7 +139,7 @@ func (u *authUsecase) UpdateUser(id int, updatedUser *models.User) (*models.User
 		}
 		user.Role = updatedUser.Role
 	}
-	
+
 	user.IsActive = updatedUser.IsActive
 
 	// Hash password baru jika ada

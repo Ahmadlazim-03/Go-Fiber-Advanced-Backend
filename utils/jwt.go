@@ -33,19 +33,19 @@ func generateRandomJTI() string {
 // GenerateJWT membuat token JWT untuk user dengan claims yang unik
 func GenerateJWT(user *models.User) (string, error) {
 	now := time.Now()
-	
+
 	claims := models.JWTClaims{
 		UserID:   user.ID,
 		Username: user.Username,
 		Role:     user.Role,
 		RegisteredClaims: jwt.RegisteredClaims{
-			Issuer:    "CRUD-Go-Fiber-App",                           // Penerbit token
-			Subject:   fmt.Sprintf("user_%d", user.ID),               // Subject berdasarkan user ID
-			Audience:  []string{"CRUD-Go-Fiber-Users"},               // Audience untuk token
-			ExpiresAt: jwt.NewNumericDate(now.Add(time.Hour * 24)),   // Token berlaku 24 jam
-			NotBefore: jwt.NewNumericDate(now),                       // Token valid mulai sekarang
-			IssuedAt:  jwt.NewNumericDate(now),                       // Waktu token dibuat
-			ID:        generateRandomJTI(),                           // Unique JWT ID
+			Issuer:    "CRUD-Go-Fiber-App",                         // Penerbit token
+			Subject:   fmt.Sprintf("user_%d", user.ID),             // Subject berdasarkan user ID
+			Audience:  []string{"CRUD-Go-Fiber-Users"},             // Audience untuk token
+			ExpiresAt: jwt.NewNumericDate(now.Add(time.Hour * 24)), // Token berlaku 24 jam
+			NotBefore: jwt.NewNumericDate(now),                     // Token valid mulai sekarang
+			IssuedAt:  jwt.NewNumericDate(now),                     // Waktu token dibuat
+			ID:        generateRandomJTI(),                         // Unique JWT ID
 		},
 	}
 
@@ -72,12 +72,12 @@ func ValidateJWT(tokenString string) (*models.JWTClaims, error) {
 		if claims.ExpiresAt != nil && claims.ExpiresAt.Time.Before(time.Now()) {
 			return nil, fmt.Errorf("token has expired")
 		}
-		
+
 		// Validasi NotBefore jika ada
 		if claims.NotBefore != nil && claims.NotBefore.Time.After(time.Now()) {
 			return nil, fmt.Errorf("token not valid yet")
 		}
-		
+
 		return claims, nil
 	}
 

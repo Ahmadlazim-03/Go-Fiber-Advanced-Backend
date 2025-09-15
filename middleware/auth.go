@@ -41,7 +41,7 @@ func ValidateJWT() fiber.Handler {
 		c.Locals("user_id", claims.UserID)
 		c.Locals("username", claims.Username)
 		c.Locals("role", claims.Role)
-		
+
 		return c.Next()
 	}
 }
@@ -57,7 +57,7 @@ func RequireRole(allowedRoles ...string) fiber.Handler {
 		}
 
 		role := userRole.(string)
-		
+
 		// Check apakah role user ada dalam allowed roles
 		for _, allowedRole := range allowedRoles {
 			if role == allowedRole {
@@ -66,9 +66,9 @@ func RequireRole(allowedRoles ...string) fiber.Handler {
 		}
 
 		return c.Status(403).JSON(fiber.Map{
-			"error": "Akses ditolak: role tidak memiliki permission",
+			"error":          "Akses ditolak: role tidak memiliki permission",
 			"required_roles": allowedRoles,
-			"user_role": role,
+			"user_role":      role,
 		})
 	}
 }

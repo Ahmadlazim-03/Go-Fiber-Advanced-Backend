@@ -1,4 +1,3 @@
-
 package main
 
 import (
@@ -16,13 +15,10 @@ import (
 
 // createDefaultAdmin membuat user admin default jika belum ada
 func createDefaultAdmin() {
-	// NOTE: Disabled user deletion for testing
-	// log.Println("Deleting all existing users before creating admin...")
-	// database.DB.Exec("DELETE FROM users")
-	
+
 	var user models.User
 	result := database.DB.Where("email = ?", "admin@example.com").First(&user)
-	
+
 	if result.Error != nil {
 		// Hash password admin123
 		hashedPassword, err := utils.HashPassword("admin123")
@@ -34,12 +30,12 @@ func createDefaultAdmin() {
 		// Admin user belum ada, buat yang baru
 		adminUser := models.User{
 			Username: "admin",
-			Email:    "admin@example.com", 
+			Email:    "admin@example.com",
 			Password: hashedPassword,
 			Role:     "admin",
 			IsActive: true,
 		}
-		
+
 		if err := database.DB.Create(&adminUser).Error; err != nil {
 			log.Printf("Warning: Could not create default admin user: %v", err)
 		} else {
@@ -60,15 +56,15 @@ func main() {
 	app.Get("/", func(c *fiber.Ctx) error {
 		return c.SendFile("./templates/welcome.html")
 	})
-	
+
 	app.Get("/login", func(c *fiber.Ctx) error {
 		return c.SendFile("./templates/login.html")
 	})
-	
+
 	app.Get("/register", func(c *fiber.Ctx) error {
 		return c.SendFile("./templates/register.html")
 	})
-	
+
 	// Debug route for testing
 	app.Get("/debug", func(c *fiber.Ctx) error {
 		return c.SendFile("./templates/debug.html")
