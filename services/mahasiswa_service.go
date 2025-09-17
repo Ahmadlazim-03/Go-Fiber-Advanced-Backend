@@ -19,6 +19,25 @@ func NewMahasiswaService(mahasiswaRepo repositories.MahasiswaRepository) *Mahasi
 }
 
 func (s *MahasiswaService) GetMahasiswas(c *fiber.Ctx) error {
+	// Parse pagination parameters from query
+	var pagination models.PaginationRequest
+	if err := c.QueryParser(&pagination); err != nil {
+		return c.Status(400).JSON(fiber.Map{
+			"error": "Invalid pagination parameters",
+		})
+	}
+
+	mahasiswas, total, err := s.mahasiswaRepo.GetWithPagination(&pagination)
+	if err != nil {
+		return c.Status(500).JSON(fiber.Map{"error": err.Error()})
+	}
+
+	response := models.NewPaginationResponse(mahasiswas, &pagination, total)
+	return c.JSON(response)
+}
+
+// GetMahasiswasLegacy endpoint untuk backward compatibility
+func (s *MahasiswaService) GetMahasiswasLegacy(c *fiber.Ctx) error {
 	mahasiswas, err := s.mahasiswaRepo.GetAll()
 	if err != nil {
 		return c.Status(500).JSON(fiber.Map{"error": err.Error()})

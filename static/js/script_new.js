@@ -2,6 +2,31 @@
 let currentEditId = null;
 let currentEditType = null;
 
+// Pagination state variables
+let mahasiswaPaginationState = {
+    page: 1,
+    limit: 10,
+    search: '',
+    sortBy: '',
+    sortOrder: 'asc'
+};
+
+let alumniPaginationState = {
+    page: 1,
+    limit: 10,
+    search: '',
+    sortBy: '',
+    sortOrder: 'asc'
+};
+
+let pekerjaanPaginationState = {
+    page: 1,
+    limit: 10,
+    search: '',
+    sortBy: '',
+    sortOrder: 'asc'
+};
+
 // Helper function untuk authorized requests
 function getAuthHeaders() {
     const token = localStorage.getItem('token');
@@ -35,6 +60,99 @@ function authorizedFetch(url, options = {}) {
     });
 }
 
+// Pagination Helper Functions
+function buildPaginationURL(baseUrl, state) {
+    const params = new URLSearchParams();
+    params.append('page', state.page);
+    params.append('limit', state.limit);
+    if (state.search) params.append('search', state.search);
+    if (state.sortBy) params.append('sortBy', state.sortBy);
+    if (state.sortOrder) params.append('sortOrder', state.sortOrder);
+    return `${baseUrl}?${params.toString()}`;
+}
+
+function renderPagination(containerId, pagination, onPageClick) {
+    const container = document.getElementById(containerId);
+    if (!container) return;
+    
+    let html = '';
+    
+    // Previous button
+    if (pagination.currentPage > 1) {
+        html += `<li class="page-item">
+            <a class="page-link" href="#" onclick="${onPageClick}(${pagination.currentPage - 1}); return false;">
+                <i class="fas fa-chevron-left"></i>
+            </a>
+        </li>`;
+    } else {
+        html += `<li class="page-item disabled">
+            <span class="page-link"><i class="fas fa-chevron-left"></i></span>
+        </li>`;
+    }
+    
+    // Page numbers
+    const startPage = Math.max(1, pagination.currentPage - 2);
+    const endPage = Math.min(pagination.totalPages, pagination.currentPage + 2);
+    
+    if (startPage > 1) {
+        html += `<li class="page-item">
+            <a class="page-link" href="#" onclick="${onPageClick}(1); return false;">1</a>
+        </li>`;
+        if (startPage > 2) {
+            html += `<li class="page-item disabled">
+                <span class="page-link">...</span>
+            </li>`;
+        }
+    }
+    
+    for (let i = startPage; i <= endPage; i++) {
+        if (i === pagination.currentPage) {
+            html += `<li class="page-item active">
+                <span class="page-link">${i}</span>
+            </li>`;
+        } else {
+            html += `<li class="page-item">
+                <a class="page-link" href="#" onclick="${onPageClick}(${i}); return false;">${i}</a>
+            </li>`;
+        }
+    }
+    
+    if (endPage < pagination.totalPages) {
+        if (endPage < pagination.totalPages - 1) {
+            html += `<li class="page-item disabled">
+                <span class="page-link">...</span>
+            </li>`;
+        }
+        html += `<li class="page-item">
+            <a class="page-link" href="#" onclick="${onPageClick}(${pagination.totalPages}); return false;">${pagination.totalPages}</a>
+        </li>`;
+    }
+    
+    // Next button
+    if (pagination.currentPage < pagination.totalPages) {
+        html += `<li class="page-item">
+            <a class="page-link" href="#" onclick="${onPageClick}(${pagination.currentPage + 1}); return false;">
+                <i class="fas fa-chevron-right"></i>
+            </a>
+        </li>`;
+    } else {
+        html += `<li class="page-item disabled">
+            <span class="page-link"><i class="fas fa-chevron-right"></i></span>
+        </li>`;
+    }
+    
+    container.innerHTML = html;
+}
+
+function updatePaginationInfo(infoId, pagination) {
+    const infoElement = document.getElementById(infoId);
+    if (!infoElement) return;
+    
+    const start = (pagination.currentPage - 1) * pagination.limit + 1;
+    const end = Math.min(start + pagination.limit - 1, pagination.total);
+    infoElement.textContent = `Menampilkan ${start} - ${end} dari ${pagination.total} data`;
+}
+
 // Initialize App
 document.addEventListener('DOMContentLoaded', function() {
     // Check authentication first
@@ -43,8 +161,67 @@ document.addEventListener('DOMContentLoaded', function() {
         loadMahasiswa();
         loadAlumni();
         loadPekerjaan();
+        
+        // Add event listeners for search inputs (with debounce for performance)
+        addSearchEventListeners();
     });
 });
+
+// Add search event listeners with debounce
+function addSearchEventListeners() {
+    let mahasiswaTimeout, alumniTimeout, pekerjaanTimeout;
+    
+    // Mahasiswa search inputs
+    ['mahasiswaSearchNim', 'mahasiswaSearchNama', 'mahasiswaSearchJurusan', 'mahasiswaSearchAngkatan', 'mahasiswaSearchEmail'].forEach(id => {
+        const element = document.getElementById(id);
+        if (element) {
+            element.addEventListener('input', function() {
+                clearTimeout(mahasiswaTimeout);
+                mahasiswaTimeout = setTimeout(searchMahasiswa, 500);
+            });
+        }
+    });
+    
+    // Mahasiswa sort controls
+    const mahasiswaSortBy = document.getElementById('mahasiswaSortBy');
+    const mahasiswaSortOrder = document.getElementById('mahasiswaSortOrder');
+    if (mahasiswaSortBy) mahasiswaSortBy.addEventListener('change', searchMahasiswa);
+    if (mahasiswaSortOrder) mahasiswaSortOrder.addEventListener('change', searchMahasiswa);
+    
+    // Alumni search inputs
+    ['alumniSearchNim', 'alumniSearchNama', 'alumniSearchJurusan', 'alumniSearchTahun', 'alumniSearchEmail'].forEach(id => {
+        const element = document.getElementById(id);
+        if (element) {
+            element.addEventListener('input', function() {
+                clearTimeout(alumniTimeout);
+                alumniTimeout = setTimeout(searchAlumni, 500);
+            });
+        }
+    });
+    
+    // Alumni sort controls
+    const alumniSortBy = document.getElementById('alumniSortBy');
+    const alumniSortOrder = document.getElementById('alumniSortOrder');
+    if (alumniSortBy) alumniSortBy.addEventListener('change', searchAlumni);
+    if (alumniSortOrder) alumniSortOrder.addEventListener('change', searchAlumni);
+    
+    // Pekerjaan search inputs
+    ['pekerjaanSearchAlumni', 'pekerjaanSearchPerusahaan', 'pekerjaanSearchPosisi', 'pekerjaanSearchBidang', 'pekerjaanSearchLokasi'].forEach(id => {
+        const element = document.getElementById(id);
+        if (element) {
+            element.addEventListener('input', function() {
+                clearTimeout(pekerjaanTimeout);
+                pekerjaanTimeout = setTimeout(searchPekerjaan, 500);
+            });
+        }
+    });
+    
+    // Pekerjaan sort controls
+    const pekerjaanSortBy = document.getElementById('pekerjaanSortBy');
+    const pekerjaanSortOrder = document.getElementById('pekerjaanSortOrder');
+    if (pekerjaanSortBy) pekerjaanSortBy.addEventListener('change', searchPekerjaan);
+    if (pekerjaanSortOrder) pekerjaanSortOrder.addEventListener('change', searchPekerjaan);
+}
 
 // Check authentication
 function checkAuth() {
@@ -182,48 +359,88 @@ function loadDashboard() {
 }
 
 // Mahasiswa Functions
-function loadMahasiswa() {
-    authorizedFetch('/api/mahasiswa')
+function loadMahasiswa(resetPagination = false) {
+    if (resetPagination) {
+        mahasiswaPaginationState.page = 1;
+    }
+    
+    const url = buildPaginationURL('/api/mahasiswa/paginated', mahasiswaPaginationState);
+    
+    authorizedFetch(url)
         .then(response => response.json())
         .then(data => {
             const tbody = document.getElementById('mahasiswaTableBody');
             tbody.innerHTML = '';
             
-            data.forEach(mahasiswa => {
-                const row = tbody.insertRow();
-                if (isAdmin()) {
-                    row.innerHTML = `
-                        <td>${mahasiswa.id}</td>
-                        <td>${mahasiswa.nim}</td>
-                        <td>${mahasiswa.nama}</td>
-                        <td>${mahasiswa.email}</td>
-                        <td>${mahasiswa.jurusan}</td>
-                        <td>${mahasiswa.angkatan}</td>
-                        <td>
-                            <button class="btn btn-sm btn-warning" onclick="editMahasiswa(${mahasiswa.id})">
-                                <i class="fas fa-edit"></i>
-                            </button>
-                            <button class="btn btn-sm btn-danger" onclick="deleteMahasiswa(${mahasiswa.id})">
-                                <i class="fas fa-trash"></i>
-                            </button>
-                        </td>
-                    `;
-                } else {
-                    row.innerHTML = `
-                        <td>${mahasiswa.id}</td>
-                        <td>${mahasiswa.nim}</td>
-                        <td>${mahasiswa.nama}</td>
-                        <td>${mahasiswa.email}</td>
-                        <td>${mahasiswa.jurusan}</td>
-                        <td>${mahasiswa.angkatan}</td>
-                    `;
-                }
-            });
+            if (data.data && data.data.length > 0) {
+                data.data.forEach(mahasiswa => {
+                    const row = tbody.insertRow();
+                    if (isAdmin()) {
+                        row.innerHTML = `
+                            <td>${mahasiswa.id}</td>
+                            <td>${mahasiswa.nim}</td>
+                            <td>${mahasiswa.nama}</td>
+                            <td>${mahasiswa.email}</td>
+                            <td>${mahasiswa.jurusan}</td>
+                            <td>${mahasiswa.angkatan}</td>
+                            <td>
+                                <button class="btn btn-sm btn-warning" onclick="editMahasiswa(${mahasiswa.id})">
+                                    <i class="fas fa-edit"></i>
+                                </button>
+                                <button class="btn btn-sm btn-danger" onclick="deleteMahasiswa(${mahasiswa.id})">
+                                    <i class="fas fa-trash"></i>
+                                </button>
+                            </td>
+                        `;
+                    } else {
+                        row.innerHTML = `
+                            <td>${mahasiswa.id}</td>
+                            <td>${mahasiswa.nim}</td>
+                            <td>${mahasiswa.nama}</td>
+                            <td>${mahasiswa.email}</td>
+                            <td>${mahasiswa.jurusan}</td>
+                            <td>${mahasiswa.angkatan}</td>
+                        `;
+                    }
+                });
+            } else {
+                tbody.innerHTML = '<tr><td colspan="7" class="text-center">Tidak ada data mahasiswa</td></tr>';
+            }
+            
+            // Update pagination info and controls
+            if (data.pagination) {
+                updatePaginationInfo('mahasiswaInfo', data.pagination);
+                renderPagination('mahasiswaPagination', data.pagination, 'goToMahasiswaPage');
+            }
         })
         .catch(error => {
             console.error('Error loading mahasiswa:', error);
             showAlert('danger', 'Gagal memuat data mahasiswa');
         });
+}
+
+function searchMahasiswa() {
+    // Get search values from multiple inputs
+    const searchNim = document.getElementById('mahasiswaSearchNim').value.trim();
+    const searchNama = document.getElementById('mahasiswaSearchNama').value.trim();
+    const searchJurusan = document.getElementById('mahasiswaSearchJurusan').value.trim();
+    const searchAngkatan = document.getElementById('mahasiswaSearchAngkatan').value.trim();
+    const searchEmail = document.getElementById('mahasiswaSearchEmail').value.trim();
+    
+    // Combine search terms
+    const searchTerms = [searchNim, searchNama, searchJurusan, searchAngkatan, searchEmail].filter(term => term).join(' ');
+    
+    mahasiswaPaginationState.search = searchTerms;
+    mahasiswaPaginationState.sortBy = document.getElementById('mahasiswaSortBy').value;
+    mahasiswaPaginationState.sortOrder = document.getElementById('mahasiswaSortOrder').value;
+    mahasiswaPaginationState.page = 1; // Reset to first page
+    
+    loadMahasiswa();
+}
+
+function goToMahasiswaPage(page) {
+    mahasiswaPaginationState.page = page;
+    loadMahasiswa();
 }
 
 function showMahasiswaForm() {
@@ -309,48 +526,88 @@ function deleteMahasiswa(id) {
 }
 
 // Alumni Functions
-function loadAlumni() {
-    authorizedFetch('/api/alumni')
+function loadAlumni(resetPagination = false) {
+    if (resetPagination) {
+        alumniPaginationState.page = 1;
+    }
+    
+    const url = buildPaginationURL('/api/alumni/paginated', alumniPaginationState);
+    
+    authorizedFetch(url)
         .then(response => response.json())
         .then(data => {
             const tbody = document.getElementById('alumniTableBody');
             tbody.innerHTML = '';
             
-            data.forEach(alumni => {
-                const row = tbody.insertRow();
-                if (isAdmin()) {
-                    row.innerHTML = `
-                        <td>${alumni.id}</td>
-                        <td>${alumni.nim}</td>
-                        <td>${alumni.nama}</td>
-                        <td>${alumni.jurusan}</td>
-                        <td>${alumni.tahun_lulus}</td>
-                        <td>${alumni.email}</td>
-                        <td>
-                            <button class="btn btn-sm btn-warning" onclick="editAlumni(${alumni.id})">
-                                <i class="fas fa-edit"></i>
-                            </button>
-                            <button class="btn btn-sm btn-danger" onclick="deleteAlumni(${alumni.id})">
-                                <i class="fas fa-trash"></i>
-                            </button>
-                        </td>
-                    `;
-                } else {
-                    row.innerHTML = `
-                        <td>${alumni.id}</td>
-                        <td>${alumni.nim}</td>
-                        <td>${alumni.nama}</td>
-                        <td>${alumni.jurusan}</td>
-                        <td>${alumni.tahun_lulus}</td>
-                        <td>${alumni.email}</td>
-                    `;
-                }
-            });
+            if (data.data && data.data.length > 0) {
+                data.data.forEach(alumni => {
+                    const row = tbody.insertRow();
+                    if (isAdmin()) {
+                        row.innerHTML = `
+                            <td>${alumni.id}</td>
+                            <td>${alumni.nim}</td>
+                            <td>${alumni.nama}</td>
+                            <td>${alumni.jurusan}</td>
+                            <td>${alumni.tahun_lulus}</td>
+                            <td>${alumni.email}</td>
+                            <td>
+                                <button class="btn btn-sm btn-warning" onclick="editAlumni(${alumni.id})">
+                                    <i class="fas fa-edit"></i>
+                                </button>
+                                <button class="btn btn-sm btn-danger" onclick="deleteAlumni(${alumni.id})">
+                                    <i class="fas fa-trash"></i>
+                                </button>
+                            </td>
+                        `;
+                    } else {
+                        row.innerHTML = `
+                            <td>${alumni.id}</td>
+                            <td>${alumni.nim}</td>
+                            <td>${alumni.nama}</td>
+                            <td>${alumni.jurusan}</td>
+                            <td>${alumni.tahun_lulus}</td>
+                            <td>${alumni.email}</td>
+                        `;
+                    }
+                });
+            } else {
+                tbody.innerHTML = '<tr><td colspan="7" class="text-center">Tidak ada data alumni</td></tr>';
+            }
+            
+            // Update pagination info and controls
+            if (data.pagination) {
+                updatePaginationInfo('alumniInfo', data.pagination);
+                renderPagination('alumniPagination', data.pagination, 'goToAlumniPage');
+            }
         })
         .catch(error => {
             console.error('Error loading alumni:', error);
             showAlert('danger', 'Gagal memuat data alumni');
         });
+}
+
+function searchAlumni() {
+    // Get search values from multiple inputs
+    const searchNim = document.getElementById('alumniSearchNim').value.trim();
+    const searchNama = document.getElementById('alumniSearchNama').value.trim();
+    const searchJurusan = document.getElementById('alumniSearchJurusan').value.trim();
+    const searchTahun = document.getElementById('alumniSearchTahun').value.trim();
+    const searchEmail = document.getElementById('alumniSearchEmail').value.trim();
+    
+    // Combine search terms
+    const searchTerms = [searchNim, searchNama, searchJurusan, searchTahun, searchEmail].filter(term => term).join(' ');
+    
+    alumniPaginationState.search = searchTerms;
+    alumniPaginationState.sortBy = document.getElementById('alumniSortBy').value;
+    alumniPaginationState.sortOrder = document.getElementById('alumniSortOrder').value;
+    alumniPaginationState.page = 1; // Reset to first page
+    
+    loadAlumni();
+}
+
+function goToAlumniPage(page) {
+    alumniPaginationState.page = page;
+    loadAlumni();
 }
 
 function showAlumniForm() {
@@ -438,50 +695,90 @@ function deleteAlumni(id) {
 }
 
 // Pekerjaan Functions
-function loadPekerjaan() {
-    authorizedFetch('/api/pekerjaan')
+function loadPekerjaan(resetPagination = false) {
+    if (resetPagination) {
+        pekerjaanPaginationState.page = 1;
+    }
+    
+    const url = buildPaginationURL('/api/pekerjaan/paginated', pekerjaanPaginationState);
+    
+    authorizedFetch(url)
         .then(response => response.json())
         .then(data => {
             const tbody = document.getElementById('pekerjaanTableBody');
             tbody.innerHTML = '';
             
-            data.forEach(pekerjaan => {
-                const row = tbody.insertRow();
-                if (isAdmin()) {
-                    row.innerHTML = `
-                        <td>${pekerjaan.id}</td>
-                        <td>${pekerjaan.alumni.nama || 'N/A'}</td>
-                        <td>${pekerjaan.nama_perusahaan}</td>
-                        <td>${pekerjaan.posisi_jabatan}</td>
-                        <td>${pekerjaan.bidang_industri}</td>
-                        <td>${pekerjaan.lokasi_kerja}</td>
-                        <td>${pekerjaan.status}</td>
-                        <td>
-                            <button class="btn btn-sm btn-warning" onclick="editPekerjaan(${pekerjaan.id})">
-                                <i class="fas fa-edit"></i>
-                            </button>
-                            <button class="btn btn-sm btn-danger" onclick="deletePekerjaan(${pekerjaan.id})">
-                                <i class="fas fa-trash"></i>
-                            </button>
-                        </td>
-                    `;
-                } else {
-                    row.innerHTML = `
-                        <td>${pekerjaan.id}</td>
-                        <td>${pekerjaan.alumni.nama || 'N/A'}</td>
-                        <td>${pekerjaan.nama_perusahaan}</td>
-                        <td>${pekerjaan.posisi_jabatan}</td>
-                        <td>${pekerjaan.bidang_industri}</td>
-                        <td>${pekerjaan.lokasi_kerja}</td>
-                        <td>${pekerjaan.status}</td>
-                    `;
-                }
-            });
+            if (data.data && data.data.length > 0) {
+                data.data.forEach(pekerjaan => {
+                    const row = tbody.insertRow();
+                    if (isAdmin()) {
+                        row.innerHTML = `
+                            <td>${pekerjaan.id}</td>
+                            <td>${pekerjaan.alumni.nama || 'N/A'}</td>
+                            <td>${pekerjaan.nama_perusahaan}</td>
+                            <td>${pekerjaan.posisi_jabatan}</td>
+                            <td>${pekerjaan.bidang_industri}</td>
+                            <td>${pekerjaan.lokasi_kerja}</td>
+                            <td>${pekerjaan.status}</td>
+                            <td>
+                                <button class="btn btn-sm btn-warning" onclick="editPekerjaan(${pekerjaan.id})">
+                                    <i class="fas fa-edit"></i>
+                                </button>
+                                <button class="btn btn-sm btn-danger" onclick="deletePekerjaan(${pekerjaan.id})">
+                                    <i class="fas fa-trash"></i>
+                                </button>
+                            </td>
+                        `;
+                    } else {
+                        row.innerHTML = `
+                            <td>${pekerjaan.id}</td>
+                            <td>${pekerjaan.alumni.nama || 'N/A'}</td>
+                            <td>${pekerjaan.nama_perusahaan}</td>
+                            <td>${pekerjaan.posisi_jabatan}</td>
+                            <td>${pekerjaan.bidang_industri}</td>
+                            <td>${pekerjaan.lokasi_kerja}</td>
+                            <td>${pekerjaan.status}</td>
+                        `;
+                    }
+                });
+            } else {
+                tbody.innerHTML = '<tr><td colspan="8" class="text-center">Tidak ada data pekerjaan</td></tr>';
+            }
+            
+            // Update pagination info and controls
+            if (data.pagination) {
+                updatePaginationInfo('pekerjaanInfo', data.pagination);
+                renderPagination('pekerjaanPagination', data.pagination, 'goToPekerjaanPage');
+            }
         })
         .catch(error => {
             console.error('Error loading pekerjaan:', error);
             showAlert('danger', 'Gagal memuat data pekerjaan');
         });
+}
+
+function searchPekerjaan() {
+    // Get search values from multiple inputs
+    const searchAlumni = document.getElementById('pekerjaanSearchAlumni').value.trim();
+    const searchPerusahaan = document.getElementById('pekerjaanSearchPerusahaan').value.trim();
+    const searchPosisi = document.getElementById('pekerjaanSearchPosisi').value.trim();
+    const searchBidang = document.getElementById('pekerjaanSearchBidang').value.trim();
+    const searchLokasi = document.getElementById('pekerjaanSearchLokasi').value.trim();
+    
+    // Combine search terms
+    const searchTerms = [searchAlumni, searchPerusahaan, searchPosisi, searchBidang, searchLokasi].filter(term => term).join(' ');
+    
+    pekerjaanPaginationState.search = searchTerms;
+    pekerjaanPaginationState.sortBy = document.getElementById('pekerjaanSortBy').value;
+    pekerjaanPaginationState.sortOrder = document.getElementById('pekerjaanSortOrder').value;
+    pekerjaanPaginationState.page = 1; // Reset to first page
+    
+    loadPekerjaan();
+}
+
+function goToPekerjaanPage(page) {
+    pekerjaanPaginationState.page = page;
+    loadPekerjaan();
 }
 
 function showPekerjaanForm() {

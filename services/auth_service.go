@@ -181,6 +181,27 @@ func (s *AuthService) GetProfile(c *fiber.Ctx) error {
 
 // GetUsers endpoint untuk mendapatkan semua user (admin only)
 func (s *AuthService) GetUsers(c *fiber.Ctx) error {
+	// Parse pagination parameters from query
+	var pagination models.PaginationRequest
+	if err := c.QueryParser(&pagination); err != nil {
+		return c.Status(400).JSON(fiber.Map{
+			"error": "Invalid pagination parameters",
+		})
+	}
+
+	users, total, err := s.userRepo.GetWithPagination(&pagination)
+	if err != nil {
+		return c.Status(500).JSON(fiber.Map{
+			"error": err.Error(),
+		})
+	}
+
+	response := models.NewPaginationResponse(users, &pagination, total)
+	return c.JSON(response)
+}
+
+// GetUsersLegacy endpoint untuk mendapatkan semua user tanpa pagination (backward compatibility)
+func (s *AuthService) GetUsersLegacy(c *fiber.Ctx) error {
 	users, err := s.userRepo.GetAll()
 	if err != nil {
 		return c.Status(500).JSON(fiber.Map{

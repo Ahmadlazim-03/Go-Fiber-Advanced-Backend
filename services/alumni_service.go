@@ -19,6 +19,25 @@ func NewAlumniService(alumniRepo repositories.AlumniRepository) *AlumniService {
 }
 
 func (s *AlumniService) GetAlumnis(c *fiber.Ctx) error {
+	// Parse pagination parameters from query
+	var pagination models.PaginationRequest
+	if err := c.QueryParser(&pagination); err != nil {
+		return c.Status(400).JSON(fiber.Map{
+			"error": "Invalid pagination parameters",
+		})
+	}
+
+	alumnis, total, err := s.alumniRepo.GetWithPagination(&pagination)
+	if err != nil {
+		return c.Status(500).JSON(fiber.Map{"error": err.Error()})
+	}
+
+	response := models.NewPaginationResponse(alumnis, &pagination, total)
+	return c.JSON(response)
+}
+
+// GetAlumnisLegacy endpoint untuk backward compatibility
+func (s *AlumniService) GetAlumnisLegacy(c *fiber.Ctx) error {
 	alumnis, err := s.alumniRepo.GetAll()
 	if err != nil {
 		return c.Status(500).JSON(fiber.Map{"error": err.Error()})

@@ -8,6 +8,7 @@ import (
 
 type MahasiswaRepository interface {
 	GetAll() ([]models.Mahasiswa, error)
+	GetWithPagination(pagination *models.PaginationRequest) ([]models.Mahasiswa, int64, error)
 	GetByID(id uint) (*models.Mahasiswa, error)
 	Create(mahasiswa *models.Mahasiswa) error
 	Update(mahasiswa *models.Mahasiswa) error
@@ -27,6 +28,38 @@ func (r *mahasiswaRepository) GetAll() ([]models.Mahasiswa, error) {
 	var mahasiswas []models.Mahasiswa
 	err := r.db.Find(&mahasiswas).Error
 	return mahasiswas, err
+}
+
+func (r *mahasiswaRepository) GetWithPagination(pagination *models.PaginationRequest) ([]models.Mahasiswa, int64, error) {
+	var mahasiswas []models.Mahasiswa
+	var total int64
+	
+	// Set default values
+	pagination.SetDefaults()
+	pagination.ValidateSortOrder()
+	
+	// Base query
+	query := r.db.Model(&models.Mahasiswa{})
+	
+	// Apply search filter if provided
+	if pagination.Search != "" {
+		searchPattern := "%" + pagination.Search + "%"
+		query = query.Where("nim ILIKE ? OR nama ILIKE ? OR jurusan ILIKE ? OR angkatan ILIKE ? OR email ILIKE ?", 
+			searchPattern, searchPattern, searchPattern, searchPattern, searchPattern)
+	}
+	
+	// Count total records with filters
+	if err := query.Count(&total).Error; err != nil {
+		return nil, 0, err
+	}
+	
+	// Apply sorting and pagination
+	err := query.Order(pagination.SortBy + " " + pagination.SortOrder).
+		Limit(pagination.Limit).
+		Offset(pagination.GetOffset()).
+		Find(&mahasiswas).Error
+	
+	return mahasiswas, total, err
 }
 
 func (r *mahasiswaRepository) GetByID(id uint) (*models.Mahasiswa, error) {

@@ -8,6 +8,7 @@ import (
 
 type AlumniRepository interface {
 	GetAll() ([]models.Alumni, error)
+	GetWithPagination(pagination *models.PaginationRequest) ([]models.Alumni, int64, error)
 	GetByID(id uint) (*models.Alumni, error)
 	Create(alumni *models.Alumni) error
 	Update(alumni *models.Alumni) error
@@ -27,6 +28,38 @@ func (r *alumniRepository) GetAll() ([]models.Alumni, error) {
 	var alumnis []models.Alumni
 	err := r.db.Find(&alumnis).Error
 	return alumnis, err
+}
+
+func (r *alumniRepository) GetWithPagination(pagination *models.PaginationRequest) ([]models.Alumni, int64, error) {
+	var alumnis []models.Alumni
+	var total int64
+	
+	// Set default values
+	pagination.SetDefaults()
+	pagination.ValidateSortOrder()
+	
+	// Base query
+	query := r.db.Model(&models.Alumni{})
+	
+	// Apply search filter if provided
+	if pagination.Search != "" {
+		searchPattern := "%" + pagination.Search + "%"
+		query = query.Where("nim ILIKE ? OR nama ILIKE ? OR jurusan ILIKE ? OR tahun_lulus ILIKE ? OR email ILIKE ?", 
+			searchPattern, searchPattern, searchPattern, searchPattern, searchPattern)
+	}
+	
+	// Count total records with filters
+	if err := query.Count(&total).Error; err != nil {
+		return nil, 0, err
+	}
+	
+	// Apply sorting and pagination
+	err := query.Order(pagination.SortBy + " " + pagination.SortOrder).
+		Limit(pagination.Limit).
+		Offset(pagination.GetOffset()).
+		Find(&alumnis).Error
+	
+	return alumnis, total, err
 }
 
 func (r *alumniRepository) GetByID(id uint) (*models.Alumni, error) {

@@ -125,6 +125,44 @@
                 </button>
             </div>
             
+            <!-- Search and Filter Controls -->
+            <div class="card mb-3">
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="input-group">
+                                <span class="input-group-text"><i class="fas fa-search"></i></span>
+                                <input type="text" id="mahasiswaSearchInput" class="form-control" placeholder="Cari berdasarkan NIM, Nama, Jurusan, Angkatan, atau Email...">
+                                <button class="btn btn-outline-secondary" type="button" onclick="searchMahasiswa()">
+                                    <i class="fas fa-search"></i> Cari
+                                </button>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <select id="mahasiswaSortBy" class="form-select" onchange="loadMahasiswaData()">
+                                <option value="id">Urutkan berdasarkan</option>
+                                <option value="nim">NIM</option>
+                                <option value="nama">Nama</option>
+                                <option value="jurusan">Jurusan</option>
+                                <option value="angkatan">Angkatan</option>
+                                <option value="created_at">Tanggal Dibuat</option>
+                            </select>
+                        </div>
+                        <div class="col-md-2">
+                            <select id="mahasiswaSortOrder" class="form-select" onchange="loadMahasiswaData()">
+                                <option value="ASC">A-Z</option>
+                                <option value="DESC">Z-A</option>
+                            </select>
+                        </div>
+                        <div class="col-md-1">
+                            <button class="btn btn-outline-primary" onclick="resetMahasiswaFilter()">
+                                <i class="fas fa-refresh"></i>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
             <div class="card">
                 <div class="card-body">
                     <div class="table-responsive">
@@ -144,6 +182,17 @@
                             </tbody>
                         </table>
                     </div>
+                    
+                    <!-- Pagination Controls for Mahasiswa -->
+                    <div class="d-flex justify-content-between align-items-center mt-3">
+                        <div class="pagination-info">
+                            <span id="mahasiswaPaginationInfo">Menampilkan data...</span>
+                        </div>
+                        <nav aria-label="Mahasiswa Pagination">
+                            <ul class="pagination pagination-sm mb-0" id="mahasiswaPagination">
+                            </ul>
+                        </nav>
+                    </div>
                 </div>
             </div>
         </div>
@@ -155,6 +204,44 @@
                 <button class="btn btn-success admin-only" onclick="showAlumniForm()" style="display: none;">
                     <i class="fas fa-plus"></i> Tambah Alumni
                 </button>
+            </div>
+            
+            <!-- Search and Filter Controls for Alumni -->
+            <div class="card mb-3">
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="input-group">
+                                <span class="input-group-text"><i class="fas fa-search"></i></span>
+                                <input type="text" id="alumniSearchInput" class="form-control" placeholder="Cari berdasarkan NIM, Nama, Jurusan, Tahun Lulus, atau Email...">
+                                <button class="btn btn-outline-secondary" type="button" onclick="searchAlumni()">
+                                    <i class="fas fa-search"></i> Cari
+                                </button>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <select id="alumniSortBy" class="form-select" onchange="loadAlumniData()">
+                                <option value="id">Urutkan berdasarkan</option>
+                                <option value="nim">NIM</option>
+                                <option value="nama">Nama</option>
+                                <option value="jurusan">Jurusan</option>
+                                <option value="tahun_lulus">Tahun Lulus</option>
+                                <option value="created_at">Tanggal Dibuat</option>
+                            </select>
+                        </div>
+                        <div class="col-md-2">
+                            <select id="alumniSortOrder" class="form-select" onchange="loadAlumniData()">
+                                <option value="ASC">A-Z</option>
+                                <option value="DESC">Z-A</option>
+                            </select>
+                        </div>
+                        <div class="col-md-1">
+                            <button class="btn btn-outline-primary" onclick="resetAlumniFilter()">
+                                <i class="fas fa-refresh"></i>
+                            </button>
+                        </div>
+                    </div>
+                </div>
             </div>
             
             <div class="card">
@@ -176,6 +263,17 @@
                             </tbody>
                         </table>
                     </div>
+                    
+                    <!-- Pagination Controls for Alumni -->
+                    <div class="d-flex justify-content-between align-items-center mt-3">
+                        <div class="pagination-info">
+                            <span id="alumniPaginationInfo">Menampilkan data...</span>
+                        </div>
+                        <nav aria-label="Alumni Pagination">
+                            <ul class="pagination pagination-sm mb-0" id="alumniPagination">
+                            </ul>
+                        </nav>
+                    </div>
                 </div>
             </div>
         </div>
@@ -187,6 +285,52 @@
                 <button class="btn btn-warning admin-only" onclick="showPekerjaanForm()" style="display: none;">
                     <i class="fas fa-plus"></i> Tambah Pekerjaan
                 </button>
+            </div>
+            
+            <!-- Search and Filter Controls -->
+            <div class="card mb-3">
+                <div class="card-body">
+                    <div class="row g-3">
+                        <div class="col-md-3">
+                            <input type="text" class="form-control" id="pekerjaanSearchAlumni" placeholder="Cari Alumni...">
+                        </div>
+                        <div class="col-md-3">
+                            <input type="text" class="form-control" id="pekerjaanSearchPerusahaan" placeholder="Cari Perusahaan...">
+                        </div>
+                        <div class="col-md-3">
+                            <input type="text" class="form-control" id="pekerjaanSearchPosisi" placeholder="Cari Posisi...">
+                        </div>
+                        <div class="col-md-3">
+                            <input type="text" class="form-control" id="pekerjaanSearchBidang" placeholder="Cari Bidang...">
+                        </div>
+                        <div class="col-md-3">
+                            <input type="text" class="form-control" id="pekerjaanSearchLokasi" placeholder="Cari Lokasi...">
+                        </div>
+                        <div class="col-md-3">
+                            <select class="form-select" id="pekerjaanSortBy">
+                                <option value="">Urutkan berdasarkan...</option>
+                                <option value="alumni_id">Alumni</option>
+                                <option value="perusahaan">Perusahaan</option>
+                                <option value="posisi">Posisi</option>
+                                <option value="bidang">Bidang</option>
+                                <option value="lokasi">Lokasi</option>
+                                <option value="status">Status</option>
+                                <option value="created_at">Tanggal Dibuat</option>
+                            </select>
+                        </div>
+                        <div class="col-md-3">
+                            <select class="form-select" id="pekerjaanSortOrder">
+                                <option value="asc">A-Z / Lama-Baru</option>
+                                <option value="desc">Z-A / Baru-Lama</option>
+                            </select>
+                        </div>
+                        <div class="col-md-3">
+                            <button class="btn btn-primary w-100" onclick="searchPekerjaan()">
+                                <i class="fas fa-search"></i> Cari
+                            </button>
+                        </div>
+                    </div>
+                </div>
             </div>
             
             <div class="card">
@@ -208,6 +352,18 @@
                             <tbody id="pekerjaanTableBody">
                             </tbody>
                         </table>
+                    </div>
+                    
+                    <!-- Pagination Controls -->
+                    <div class="d-flex justify-content-between align-items-center mt-3">
+                        <div>
+                            <span class="text-muted" id="pekerjaanInfo">Menampilkan 0 - 0 dari 0 data</span>
+                        </div>
+                        <nav aria-label="Pekerjaan pagination">
+                            <ul class="pagination pagination-sm mb-0" id="pekerjaanPagination">
+                                <!-- Pagination items will be dynamically generated -->
+                            </ul>
+                        </nav>
                     </div>
                 </div>
             </div>

@@ -8,6 +8,7 @@ import (
 
 type PekerjaanAlumniRepository interface {
 	GetAll() ([]models.PekerjaanAlumni, error)
+	GetWithPagination(pagination *models.PaginationRequest) ([]models.PekerjaanAlumni, int64, error)
 	GetByID(id uint) (*models.PekerjaanAlumni, error)
 	GetByAlumniID(alumniID uint) ([]models.PekerjaanAlumni, error)
 	Create(pekerjaan *models.PekerjaanAlumni) error
@@ -29,6 +30,39 @@ func (r *pekerjaanAlumniRepository) GetAll() ([]models.PekerjaanAlumni, error) {
 	var pekerjaans []models.PekerjaanAlumni
 	err := r.db.Preload("Alumni").Find(&pekerjaans).Error
 	return pekerjaans, err
+}
+
+func (r *pekerjaanAlumniRepository) GetWithPagination(pagination *models.PaginationRequest) ([]models.PekerjaanAlumni, int64, error) {
+	var pekerjaans []models.PekerjaanAlumni
+	var total int64
+	
+	// Set default values
+	pagination.SetDefaults()
+	pagination.ValidateSortOrder()
+	
+	// Base query
+	query := r.db.Model(&models.PekerjaanAlumni{}).Preload("Alumni")
+	
+	// Apply search filter if provided
+	if pagination.Search != "" {
+		searchPattern := "%" + pagination.Search + "%"
+		query = query.Joins("JOIN alumnis ON pekerjaan_alumnis.alumni_id = alumnis.id").
+			Where("pekerjaan_alumnis.posisi ILIKE ? OR pekerjaan_alumnis.nama_perusahaan ILIKE ? OR pekerjaan_alumnis.alamat_perusahaan ILIKE ? OR alumnis.nama ILIKE ?", 
+			searchPattern, searchPattern, searchPattern, searchPattern)
+	}
+	
+	// Count total records with filters
+	if err := query.Count(&total).Error; err != nil {
+		return nil, 0, err
+	}
+	
+	// Apply sorting and pagination
+	err := query.Order(pagination.SortBy + " " + pagination.SortOrder).
+		Limit(pagination.Limit).
+		Offset(pagination.GetOffset()).
+		Find(&pekerjaans).Error
+	
+	return pekerjaans, total, err
 }
 
 func (r *pekerjaanAlumniRepository) GetByID(id uint) (*models.PekerjaanAlumni, error) {

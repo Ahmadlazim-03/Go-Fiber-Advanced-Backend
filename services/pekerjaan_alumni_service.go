@@ -19,6 +19,25 @@ func NewPekerjaanAlumniService(pekerjaanRepo repositories.PekerjaanAlumniReposit
 }
 
 func (s *PekerjaanAlumniService) GetPekerjaanAlumnis(c *fiber.Ctx) error {
+	// Parse pagination parameters from query
+	var pagination models.PaginationRequest
+	if err := c.QueryParser(&pagination); err != nil {
+		return c.Status(400).JSON(fiber.Map{
+			"error": "Invalid pagination parameters",
+		})
+	}
+
+	pekerjaans, total, err := s.pekerjaanRepo.GetWithPagination(&pagination)
+	if err != nil {
+		return c.Status(500).JSON(fiber.Map{"error": err.Error()})
+	}
+
+	response := models.NewPaginationResponse(pekerjaans, &pagination, total)
+	return c.JSON(response)
+}
+
+// GetPekerjaanAlumnisLegacy endpoint untuk backward compatibility
+func (s *PekerjaanAlumniService) GetPekerjaanAlumnisLegacy(c *fiber.Ctx) error {
 	pekerjaans, err := s.pekerjaanRepo.GetAll()
 	if err != nil {
 		return c.Status(500).JSON(fiber.Map{"error": err.Error()})

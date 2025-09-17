@@ -8,6 +8,7 @@ import (
 
 type UserRepository interface {
 	GetAll() ([]models.User, error)
+	GetWithPagination(pagination *models.PaginationRequest) ([]models.User, int64, error)
 	GetByID(id int) (*models.User, error)
 	GetByEmail(email string) (*models.User, error)
 	GetByUsername(username string) (*models.User, error)
@@ -29,6 +30,38 @@ func (r *userRepository) GetAll() ([]models.User, error) {
 	var users []models.User
 	err := r.db.Find(&users).Error
 	return users, err
+}
+
+func (r *userRepository) GetWithPagination(pagination *models.PaginationRequest) ([]models.User, int64, error) {
+	var users []models.User
+	var total int64
+	
+	// Set default values
+	pagination.SetDefaults()
+	pagination.ValidateSortOrder()
+	
+	// Base query
+	query := r.db.Model(&models.User{})
+	
+	// Apply search filter if provided
+	if pagination.Search != "" {
+		searchPattern := "%" + pagination.Search + "%"
+		query = query.Where("username ILIKE ? OR email ILIKE ? OR role ILIKE ?", 
+			searchPattern, searchPattern, searchPattern)
+	}
+	
+	// Count total records with filters
+	if err := query.Count(&total).Error; err != nil {
+		return nil, 0, err
+	}
+	
+	// Apply sorting and pagination
+	err := query.Order(pagination.SortBy + " " + pagination.SortOrder).
+		Limit(pagination.Limit).
+		Offset(pagination.GetOffset()).
+		Find(&users).Error
+	
+	return users, total, err
 }
 
 func (r *userRepository) GetByID(id int) (*models.User, error) {
