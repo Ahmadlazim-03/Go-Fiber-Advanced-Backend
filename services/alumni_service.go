@@ -46,15 +46,27 @@ func (s *AlumniService) GetAlumnisLegacy(c *fiber.Ctx) error {
 }
 
 func (s *AlumniService) CreateAlumni(c *fiber.Ctx) error {
-	var alumni models.Alumni
-	if err := c.BodyParser(&alumni); err != nil {
+	var req models.CreateAlumniRequest
+	if err := c.BodyParser(&req); err != nil {
 		return c.Status(400).JSON(fiber.Map{"error": err.Error()})
 	}
+
+	alumni := models.Alumni{
+		UserID:     req.UserID,
+		NIM:        req.NIM,
+		Nama:       req.Nama,
+		Jurusan:    req.Jurusan,
+		Angkatan:   req.Angkatan,
+		TahunLulus: req.TahunLulus,
+		NoTelepon:  req.NoTelepon,
+		Alamat:     req.Alamat,
+	}
+
 	err := s.alumniRepo.Create(&alumni)
 	if err != nil {
 		return c.Status(500).JSON(fiber.Map{"error": err.Error()})
 	}
-	return c.JSON(alumni)
+	return c.Status(201).JSON(alumni)
 }
 
 func (s *AlumniService) GetAlumni(c *fiber.Ctx) error {
@@ -74,8 +86,9 @@ func (s *AlumniService) UpdateAlumni(c *fiber.Ctx) error {
 	if err != nil {
 		return c.Status(400).JSON(fiber.Map{"error": "Invalid ID"})
 	}
-	var updatedAlumni models.Alumni
-	if err := c.BodyParser(&updatedAlumni); err != nil {
+	
+	var req models.UpdateAlumniRequest
+	if err := c.BodyParser(&req); err != nil {
 		return c.Status(400).JSON(fiber.Map{"error": err.Error()})
 	}
 	
@@ -86,13 +99,12 @@ func (s *AlumniService) UpdateAlumni(c *fiber.Ctx) error {
 	}
 	
 	// Update fields (business logic from usecase)
-	alumni.Nama = updatedAlumni.Nama
-	alumni.Jurusan = updatedAlumni.Jurusan
-	alumni.Angkatan = updatedAlumni.Angkatan
-	alumni.TahunLulus = updatedAlumni.TahunLulus
-	alumni.Email = updatedAlumni.Email
-	alumni.NoTelepon = updatedAlumni.NoTelepon
-	alumni.Alamat = updatedAlumni.Alamat
+	alumni.Nama = req.Nama
+	alumni.Jurusan = req.Jurusan
+	alumni.Angkatan = req.Angkatan
+	alumni.TahunLulus = req.TahunLulus
+	alumni.NoTelepon = req.NoTelepon
+	alumni.Alamat = req.Alamat
 	
 	err = s.alumniRepo.Update(alumni)
 	if err != nil {
@@ -132,4 +144,20 @@ func (s *AlumniService) GetAlumniCount(c *fiber.Ctx) error {
 	return c.JSON(fiber.Map{
 		"total_alumni": count,
 	})
+}
+
+// Get alumni by user ID (untuk alumni melihat profil mereka sendiri)
+func (s *AlumniService) GetAlumniByUser(c *fiber.Ctx) error {
+	// Get user info from middleware locals
+	userID, ok := c.Locals("user_id").(int)
+	if !ok {
+		return c.Status(401).JSON(fiber.Map{"error": "User ID tidak ditemukan"})
+	}
+
+	alumni, err := s.alumniRepo.GetByUserID(userID)
+	if err != nil {
+		return c.Status(404).JSON(fiber.Map{"error": "Alumni profile not found"})
+	}
+
+	return c.JSON(alumni)
 }

@@ -110,6 +110,6 @@ func main() {
 	// Setup API routes with dependency injection
 	routes.SetupRoutes(app, mahasiswaService, alumniService, pekerjaanService, authService)
 
-	log.Println("Server running on http://localhost:3000")
-	log.Fatal(app.Listen(":3000"))
+	log.Println("Server running on http://localhost:8080")
+	log.Fatal(app.Listen(":8080"))
 }

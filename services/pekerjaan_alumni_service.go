@@ -166,3 +166,129 @@ func (s *PekerjaanAlumniService) GetAlumniCountByCompany(c *fiber.Ctx) error {
 		"message":         "Data jumlah alumni di perusahaan berhasil diambil",
 	})
 }
+
+// Soft Delete Methods
+func (s *PekerjaanAlumniService) SoftDeletePekerjaanAlumni(c *fiber.Ctx) error {
+	id, err := strconv.ParseUint(c.Params("id"), 10, 32)
+	if err != nil {
+		return c.Status(400).JSON(fiber.Map{"error": "Invalid ID"})
+	}
+
+	// Get user info from middleware locals
+	userRole, ok := c.Locals("role").(string)
+	if !ok {
+		return c.Status(401).JSON(fiber.Map{"error": "Role tidak ditemukan"})
+	}
+	
+	userID, ok := c.Locals("user_id").(int)
+	if !ok {
+		return c.Status(401).JSON(fiber.Map{"error": "User ID tidak ditemukan"})
+	}
+
+	// Check authorization
+	if userRole != "admin" {
+		// If not admin, check if user owns this pekerjaan through alumni
+		pekerjaan, err := s.pekerjaanRepo.GetByID(uint(id))
+		if err != nil {
+			return c.Status(404).JSON(fiber.Map{"error": "Pekerjaan not found"})
+		}
+
+		// Check if the pekerjaan belongs to the user's alumni profile
+		if pekerjaan.Alumni.UserID != userID {
+			return c.Status(403).JSON(fiber.Map{"error": "Access denied. You can only delete your own job records."})
+		}
+	}
+
+	err = s.pekerjaanRepo.SoftDelete(uint(id))
+	if err != nil {
+		return c.Status(500).JSON(fiber.Map{"error": err.Error()})
+	}
+
+	return c.JSON(fiber.Map{"message": "Pekerjaan berhasil dihapus sementara"})
+}
+
+func (s *PekerjaanAlumniService) SoftDeletePekerjaanByAlumni(c *fiber.Ctx) error {
+	alumniID, err := strconv.ParseUint(c.Params("alumni_id"), 10, 32)
+	if err != nil {
+		return c.Status(400).JSON(fiber.Map{"error": "Invalid Alumni ID"})
+	}
+
+	// Get user info from middleware locals
+	userRole, ok := c.Locals("role").(string)
+	if !ok {
+		return c.Status(401).JSON(fiber.Map{"error": "Role tidak ditemukan"})
+	}
+
+	// Check authorization
+	if userRole != "admin" {
+		// If not admin, check if user owns this alumni profile
+		// This requires getting alumni by ID and checking user_id
+		// For now, we'll implement basic check
+		return c.Status(403).JSON(fiber.Map{"error": "Access denied. Only admin can perform bulk operations."})
+	}
+
+	err = s.pekerjaanRepo.SoftDeleteByAlumniID(uint(alumniID))
+	if err != nil {
+		return c.Status(500).JSON(fiber.Map{"error": err.Error()})
+	}
+
+	return c.JSON(fiber.Map{"message": "Semua pekerjaan alumni berhasil dihapus sementara"})
+}
+
+func (s *PekerjaanAlumniService) RestorePekerjaanAlumni(c *fiber.Ctx) error {
+	// Only admin can restore
+	userRole, ok := c.Locals("role").(string)
+	if !ok {
+		return c.Status(401).JSON(fiber.Map{"error": "Role tidak ditemukan"})
+	}
+
+	if userRole != "admin" {
+		return c.Status(403).JSON(fiber.Map{"error": "Access denied. Only admin can restore data."})
+	}
+
+	id, err := strconv.ParseUint(c.Params("id"), 10, 32)
+	if err != nil {
+		return c.Status(400).JSON(fiber.Map{"error": "Invalid ID"})
+	}
+
+	err = s.pekerjaanRepo.Restore(uint(id))
+	if err != nil {
+		return c.Status(500).JSON(fiber.Map{"error": err.Error()})
+	}
+
+	return c.JSON(fiber.Map{"message": "Pekerjaan berhasil dikembalikan"})
+}
+
+func (s *PekerjaanAlumniService) GetDeletedPekerjaan(c *fiber.Ctx) error {
+	// Only admin can view deleted data
+	userRole, ok := c.Locals("role").(string)
+	if !ok {
+		return c.Status(401).JSON(fiber.Map{"error": "Role tidak ditemukan"})
+	}
+
+	if userRole != "admin" {
+		return c.Status(403).JSON(fiber.Map{"error": "Access denied. Only admin can view deleted data."})
+	}
+
+	pekerjaans, err := s.pekerjaanRepo.GetDeleted()
+	if err != nil {
+		return c.Status(500).JSON(fiber.Map{"error": err.Error()})
+	}
+
+	return c.JSON(pekerjaans)
+}
+
+func (s *PekerjaanAlumniService) GetPekerjaanByUser(c *fiber.Ctx) error {
+	// Get user info from middleware locals
+	userID, ok := c.Locals("user_id").(int)
+	if !ok {
+		return c.Status(401).JSON(fiber.Map{"error": "User ID tidak ditemukan"})
+	}
+
+	pekerjaans, err := s.pekerjaanRepo.GetByUserID(userID)
+	if err != nil {
+		return c.Status(500).JSON(fiber.Map{"error": err.Error()})
+	}
+
+	return c.JSON(pekerjaans)
+}

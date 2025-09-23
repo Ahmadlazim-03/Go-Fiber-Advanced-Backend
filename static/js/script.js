@@ -354,7 +354,7 @@ function deleteAlumni(id) {
 
 // Pekerjaan Functions
 function loadPekerjaan() {
-    fetch('/pekerjaan')
+    authorizedFetch('/api/pekerjaan')
         .then(response => response.json())
         .then(data => {
             const tbody = document.getElementById('pekerjaanTableBody');
@@ -362,28 +362,49 @@ function loadPekerjaan() {
             
             if (data && data.length > 0) {
                 data.forEach(item => {
+                    const userRole = localStorage.getItem('userRole');
+                    const isAdmin = userRole === 'admin';
+                    const currentUserID = parseInt(localStorage.getItem('userID'));
+                    const isOwner = item.alumni && item.alumni.user_id === currentUserID;
+                    
+                    let adminActions = '';
+                    let userActions = '';
+                    
+                    if (isAdmin) {
+                        adminActions = `
+                            <button class="btn btn-sm btn-warning" onclick="editPekerjaan(${item.id})" title="Edit">
+                                <i class="fas fa-edit"></i>
+                            </button>
+                            <button class="btn btn-sm btn-danger" onclick="deletePekerjaan(${item.id})" title="Hapus Permanen">
+                                <i class="fas fa-trash"></i>
+                            </button>
+                        `;
+                    }
+                    
+                    if (isAdmin || isOwner) {
+                        userActions = `
+                            <button class="btn btn-sm btn-secondary" onclick="softDeletePekerjaan(${item.id})" title="Soft Delete">
+                                <i class="fas fa-trash-alt"></i>
+                            </button>
+                        `;
+                    }
+                    
                     tbody.innerHTML += `
                         <tr>
                             <td>${item.id}</td>
-                            <td>Alumni ID: ${item.alumni_id}</td>
+                            <td>${item.alumni ? item.alumni.nama : 'Alumni ID: ' + item.alumni_id}</td>
                             <td>${item.nama_perusahaan}</td>
                             <td>${item.posisi_jabatan}</td>
                             <td>${item.bidang_industri}</td>
                             <td>${item.lokasi_kerja}</td>
                             <td><span class="badge bg-${getStatusColor(item.status_pekerjaan)}">${item.status_pekerjaan}</span></td>
-                            <td>
-                                <button class="btn btn-sm btn-warning" onclick="editPekerjaan(${item.id})">
-                                    <i class="fas fa-edit"></i>
-                                </button>
-                                <button class="btn btn-sm btn-danger" onclick="deletePekerjaan(${item.id})">
-                                    <i class="fas fa-trash"></i>
-                                </button>
-                            </td>
+                            <td class="admin-only" style="display: ${isAdmin ? 'table-cell' : 'none'};">${adminActions}</td>
+                            <td class="protected-content" style="display: ${(isAdmin || isOwner) ? 'table-cell' : 'none'};">${userActions}</td>
                         </tr>
                     `;
                 });
             } else {
-                tbody.innerHTML = '<tr><td colspan="8" class="text-center">Tidak ada data</td></tr>';
+                tbody.innerHTML = '<tr><td colspan="9" class="text-center">Tidak ada data</td></tr>';
             }
         })
         .catch(error => {
@@ -484,18 +505,103 @@ function editPekerjaan(id) {
 }
 
 function deletePekerjaan(id) {
-    if (confirm('Yakin ingin menghapus data pekerjaan ini?')) {
-        fetch(`/pekerjaan/${id}`, {
+    if (confirm('Yakin ingin menghapus PERMANEN data pekerjaan ini? Data tidak dapat dikembalikan!')) {
+        authorizedFetch(`/api/pekerjaan/${id}`, {
             method: 'DELETE'
         })
         .then(() => {
-            showAlert('Data pekerjaan berhasil dihapus', 'success');
+            showAlert('Data pekerjaan berhasil dihapus permanen', 'success');
             loadPekerjaan();
             loadDashboard();
         })
         .catch(error => {
             console.error('Error:', error);
             showAlert('Error deleting pekerjaan data', 'danger');
+        });
+    }
+}
+
+// Soft Delete Functions
+function softDeletePekerjaan(id) {
+    if (confirm('Yakin ingin menghapus sementara data pekerjaan ini? Data masih dapat dikembalikan oleh admin.')) {
+        authorizedFetch(`/api/pekerjaan/soft/${id}`, {
+            method: 'DELETE'
+        })
+        .then(() => {
+            showAlert('Data pekerjaan berhasil dihapus sementara', 'warning');
+            loadPekerjaan();
+            loadDashboard();
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            showAlert('Error soft deleting pekerjaan data', 'danger');
+        });
+    }
+}
+
+function showDeletedPekerjaan() {
+    authorizedFetch('/api/pekerjaan/deleted')
+        .then(response => response.json())
+        .then(data => {
+            const tbody = document.getElementById('pekerjaanTableBody');
+            tbody.innerHTML = '';
+            
+            if (data && data.length > 0) {
+                data.forEach(item => {
+                    tbody.innerHTML += `
+                        <tr class="table-warning">
+                            <td>${item.id}</td>
+                            <td>${item.alumni ? item.alumni.nama : 'Alumni ID: ' + item.alumni_id}</td>
+                            <td>${item.nama_perusahaan}</td>
+                            <td>${item.posisi_jabatan}</td>
+                            <td>${item.bidang_industri}</td>
+                            <td>${item.lokasi_kerja}</td>
+                            <td><span class="badge bg-secondary">DIHAPUS</span></td>
+                            <td class="admin-only">
+                                <button class="btn btn-sm btn-success" onclick="restorePekerjaan(${item.id})" title="Restore">
+                                    <i class="fas fa-undo"></i>
+                                </button>
+                                <button class="btn btn-sm btn-danger" onclick="deletePekerjaan(${item.id})" title="Hapus Permanen">
+                                    <i class="fas fa-trash"></i>
+                                </button>
+                            </td>
+                            <td class="protected-content">
+                                <small class="text-muted">Dihapus: ${new Date(item.deleted_at).toLocaleDateString()}</small>
+                            </td>
+                        </tr>
+                    `;
+                });
+            } else {
+                tbody.innerHTML = '<tr><td colspan="9" class="text-center">Tidak ada data terhapus</td></tr>';
+            }
+            
+            // Add back button
+            document.querySelector('#pekerjaan h2').innerHTML = `
+                <i class="fas fa-trash-restore"></i> Data Pekerjaan Terhapus
+                <button class="btn btn-primary ms-3" onclick="loadPekerjaan(); document.querySelector('#pekerjaan h2').innerHTML = '<i class=\\"fas fa-briefcase\\"></i> Data Pekerjaan Alumni';">
+                    <i class="fas fa-arrow-left"></i> Kembali
+                </button>
+            `;
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            showAlert('Error loading deleted pekerjaan data', 'danger');
+        });
+}
+
+function restorePekerjaan(id) {
+    if (confirm('Yakin ingin mengembalikan data pekerjaan ini?')) {
+        authorizedFetch(`/api/pekerjaan/restore/${id}`, {
+            method: 'POST'
+        })
+        .then(() => {
+            showAlert('Data pekerjaan berhasil dikembalikan', 'success');
+            showDeletedPekerjaan(); // Reload deleted data view
+            loadDashboard();
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            showAlert('Error restoring pekerjaan data', 'danger');
         });
     }
 }

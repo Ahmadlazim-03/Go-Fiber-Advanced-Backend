@@ -2,6 +2,7 @@ package repositories
 
 import (
 	"modul4crud/models"
+	"time"
 
 	"gorm.io/gorm"
 )
@@ -11,9 +12,14 @@ type PekerjaanAlumniRepository interface {
 	GetWithPagination(pagination *models.PaginationRequest) ([]models.PekerjaanAlumni, int64, error)
 	GetByID(id uint) (*models.PekerjaanAlumni, error)
 	GetByAlumniID(alumniID uint) ([]models.PekerjaanAlumni, error)
+	GetByUserID(userID int) ([]models.PekerjaanAlumni, error)
 	Create(pekerjaan *models.PekerjaanAlumni) error
 	Update(pekerjaan *models.PekerjaanAlumni) error
 	Delete(id uint) error
+	SoftDelete(id uint) error
+	SoftDeleteByAlumniID(alumniID uint) error
+	Restore(id uint) error
+	GetDeleted() ([]models.PekerjaanAlumni, error)
 	Count() (int64, error)
 	GetAlumniCountByCompany(namaPerusahaan string) (int64, error)
 }
@@ -28,7 +34,7 @@ func NewPekerjaanAlumniRepository(db *gorm.DB) PekerjaanAlumniRepository {
 
 func (r *pekerjaanAlumniRepository) GetAll() ([]models.PekerjaanAlumni, error) {
 	var pekerjaans []models.PekerjaanAlumni
-	err := r.db.Preload("Alumni").Find(&pekerjaans).Error
+	err := r.db.Preload("Alumni").Preload("Alumni.User").Find(&pekerjaans).Error
 	return pekerjaans, err
 }
 
@@ -41,7 +47,7 @@ func (r *pekerjaanAlumniRepository) GetWithPagination(pagination *models.Paginat
 	pagination.ValidateSortOrder()
 	
 	// Base query
-	query := r.db.Model(&models.PekerjaanAlumni{}).Preload("Alumni")
+	query := r.db.Model(&models.PekerjaanAlumni{}).Preload("Alumni").Preload("Alumni.User")
 	
 	// Apply search filter if provided
 	if pagination.Search != "" {
@@ -67,7 +73,7 @@ func (r *pekerjaanAlumniRepository) GetWithPagination(pagination *models.Paginat
 
 func (r *pekerjaanAlumniRepository) GetByID(id uint) (*models.PekerjaanAlumni, error) {
 	var pekerjaan models.PekerjaanAlumni
-	err := r.db.First(&pekerjaan, id).Error
+	err := r.db.Preload("Alumni").Preload("Alumni.User").First(&pekerjaan, id).Error
 	if err != nil {
 		return nil, err
 	}
@@ -76,7 +82,16 @@ func (r *pekerjaanAlumniRepository) GetByID(id uint) (*models.PekerjaanAlumni, e
 
 func (r *pekerjaanAlumniRepository) GetByAlumniID(alumniID uint) ([]models.PekerjaanAlumni, error) {
 	var pekerjaans []models.PekerjaanAlumni
-	err := r.db.Where("alumni_id = ?", alumniID).Find(&pekerjaans).Error
+	err := r.db.Preload("Alumni").Preload("Alumni.User").Where("alumni_id = ?", alumniID).Find(&pekerjaans).Error
+	return pekerjaans, err
+}
+
+func (r *pekerjaanAlumniRepository) GetByUserID(userID int) ([]models.PekerjaanAlumni, error) {
+	var pekerjaans []models.PekerjaanAlumni
+	err := r.db.Preload("Alumni").Preload("Alumni.User").
+		Joins("JOIN alumnis ON pekerjaan_alumnis.alumni_id = alumnis.id").
+		Where("alumnis.user_id = ?", userID).
+		Find(&pekerjaans).Error
 	return pekerjaans, err
 }
 
@@ -107,4 +122,23 @@ func (r *pekerjaanAlumniRepository) GetAlumniCountByCompany(namaPerusahaan strin
 		Count(&count).Error
 
 	return count, err
+}
+
+// Soft Delete methods
+func (r *pekerjaanAlumniRepository) SoftDelete(id uint) error {
+	return r.db.Model(&models.PekerjaanAlumni{}).Where("id = ?", id).Update("deleted_at", time.Now()).Error
+}
+
+func (r *pekerjaanAlumniRepository) SoftDeleteByAlumniID(alumniID uint) error {
+	return r.db.Model(&models.PekerjaanAlumni{}).Where("alumni_id = ?", alumniID).Update("deleted_at", time.Now()).Error
+}
+
+func (r *pekerjaanAlumniRepository) Restore(id uint) error {
+	return r.db.Model(&models.PekerjaanAlumni{}).Where("id = ?", id).Update("deleted_at", nil).Error
+}
+
+func (r *pekerjaanAlumniRepository) GetDeleted() ([]models.PekerjaanAlumni, error) {
+	var pekerjaans []models.PekerjaanAlumni
+	err := r.db.Unscoped().Preload("Alumni").Preload("Alumni.User").Where("deleted_at IS NOT NULL").Find(&pekerjaans).Error
+	return pekerjaans, err
 }

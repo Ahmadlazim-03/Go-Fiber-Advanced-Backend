@@ -285,6 +285,9 @@
                 <button class="btn btn-warning admin-only" onclick="showPekerjaanForm()" style="display: none;">
                     <i class="fas fa-plus"></i> Tambah Pekerjaan
                 </button>
+                <button class="btn btn-secondary admin-only ms-2" onclick="showDeletedPekerjaan()" style="display: none;">
+                    <i class="fas fa-trash-restore"></i> Data Terhapus
+                </button>
             </div>
             
             <!-- Search and Filter Controls -->
@@ -346,7 +349,8 @@
                                     <th>Bidang</th>
                                     <th>Lokasi</th>
                                     <th>Status</th>
-                                    <th class="admin-only" style="display: none;">Aksi</th>
+                                    <th class="admin-only" style="display: none;">Aksi Admin</th>
+                                    <th class="protected-content" style="display: none;">Aksi</th>
                                 </tr>
                             </thead>
                             <tbody id="pekerjaanTableBody">

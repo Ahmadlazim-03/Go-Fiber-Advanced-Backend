@@ -10,6 +10,7 @@ type AlumniRepository interface {
 	GetAll() ([]models.Alumni, error)
 	GetWithPagination(pagination *models.PaginationRequest) ([]models.Alumni, int64, error)
 	GetByID(id uint) (*models.Alumni, error)
+	GetByUserID(userID int) (*models.Alumni, error)
 	Create(alumni *models.Alumni) error
 	Update(alumni *models.Alumni) error
 	Delete(id uint) error
@@ -26,7 +27,7 @@ func NewAlumniRepository(db *gorm.DB) AlumniRepository {
 
 func (r *alumniRepository) GetAll() ([]models.Alumni, error) {
 	var alumnis []models.Alumni
-	err := r.db.Find(&alumnis).Error
+	err := r.db.Preload("User").Preload("Pekerjaan").Find(&alumnis).Error
 	return alumnis, err
 }
 
@@ -39,12 +40,13 @@ func (r *alumniRepository) GetWithPagination(pagination *models.PaginationReques
 	pagination.ValidateSortOrder()
 	
 	// Base query
-	query := r.db.Model(&models.Alumni{})
+	query := r.db.Model(&models.Alumni{}).Preload("User").Preload("Pekerjaan")
 	
 	// Apply search filter if provided
 	if pagination.Search != "" {
 		searchPattern := "%" + pagination.Search + "%"
-		query = query.Where("nim ILIKE ? OR nama ILIKE ? OR jurusan ILIKE ? OR tahun_lulus ILIKE ? OR email ILIKE ?", 
+		query = query.Joins("JOIN users ON alumnis.user_id = users.id").
+			Where("nim ILIKE ? OR nama ILIKE ? OR jurusan ILIKE ? OR CAST(tahun_lulus AS TEXT) ILIKE ? OR users.email ILIKE ?", 
 			searchPattern, searchPattern, searchPattern, searchPattern, searchPattern)
 	}
 	
@@ -64,7 +66,16 @@ func (r *alumniRepository) GetWithPagination(pagination *models.PaginationReques
 
 func (r *alumniRepository) GetByID(id uint) (*models.Alumni, error) {
 	var alumni models.Alumni
-	err := r.db.First(&alumni, id).Error
+	err := r.db.Preload("User").Preload("Pekerjaan").First(&alumni, id).Error
+	if err != nil {
+		return nil, err
+	}
+	return &alumni, nil
+}
+
+func (r *alumniRepository) GetByUserID(userID int) (*models.Alumni, error) {
+	var alumni models.Alumni
+	err := r.db.Preload("User").Preload("Pekerjaan").Where("user_id = ?", userID).First(&alumni).Error
 	if err != nil {
 		return nil, err
 	}

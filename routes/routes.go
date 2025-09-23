@@ -72,6 +72,7 @@ func SetupRoutes(
 	alumni := api.Group("/alumni")
 	alumni.Get("/count", alumniService.GetAlumniCount)                           // User & Admin
 	alumni.Get("/", alumniService.GetAlumnis)                                    // User & Admin
+	alumni.Get("/my-profile", alumniService.GetAlumniByUser)                     // User untuk melihat profil sendiri
 	alumni.Get("/:id", alumniService.GetAlumni)                                  // User & Admin
 	alumni.Post("/", middleware.RequireAdmin(), alumniService.CreateAlumni)      // Admin only
 	alumni.Put("/:id", middleware.RequireAdmin(), alumniService.UpdateAlumni)    // Admin only
@@ -81,11 +82,18 @@ func SetupRoutes(
 	pekerjaan := api.Group("/pekerjaan")
 	pekerjaan.Get("/count", pekerjaanService.GetPekerjaanAlumniCount)                           // User & Admin
 	pekerjaan.Get("/", pekerjaanService.GetPekerjaanAlumnis)                                    // User & Admin
+	pekerjaan.Get("/my-jobs", pekerjaanService.GetPekerjaanByUser)                              // User untuk melihat pekerjaan sendiri
+	pekerjaan.Get("/deleted", pekerjaanService.GetDeletedPekerjaan)                             // Admin only - melihat data terhapus
 	pekerjaan.Get("/:id", pekerjaanService.GetPekerjaanAlumni)                                  // User & Admin
 	pekerjaan.Get("/alumni/:alumni_id", pekerjaanService.GetPekerjaanByAlumni)                  // User & Admin
 	pekerjaan.Post("/", middleware.RequireAdmin(), pekerjaanService.CreatePekerjaanAlumni)      // Admin only
 	pekerjaan.Put("/:id", middleware.RequireAdmin(), pekerjaanService.UpdatePekerjaanAlumni)    // Admin only
-	pekerjaan.Delete("/:id", middleware.RequireAdmin(), pekerjaanService.DeletePekerjaanAlumni) // Admin only
+	pekerjaan.Delete("/:id", middleware.RequireAdmin(), pekerjaanService.DeletePekerjaanAlumni) // Admin only - hard delete
+	
+	// Soft Delete routes untuk pekerjaan alumni
+	pekerjaan.Delete("/soft/:id", pekerjaanService.SoftDeletePekerjaanAlumni)                   // Admin atau Alumni pemilik
+	pekerjaan.Delete("/soft/alumni/:alumni_id", pekerjaanService.SoftDeletePekerjaanByAlumni)   // Admin atau Alumni pemilik
+	pekerjaan.Post("/restore/:id", pekerjaanService.RestorePekerjaanAlumni)                     // Admin only - restore soft deleted
 
 	// Perusahaan routes - public read access
 	api.Get("/perusahaan/:nama_perusahaan", pekerjaanService.GetAlumniCountByCompany)
