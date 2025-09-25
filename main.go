@@ -45,6 +45,46 @@ func createDefaultAdmin() {
 	}
 }
 
+func fixDataBeforeMigration() {
+	// Check if alumnis table exists
+	if !database.DB.Migrator().HasTable("alumnis") {
+		return // Table doesn't exist yet, no need to fix
+	}
+
+	log.Println("Checking for existing alumni data...")
+
+	// Check if there are any existing alumni records
+	var count int64
+	database.DB.Table("alumnis").Count(&count)
+	
+	if count > 0 {
+		log.Printf("Found %d existing alumni records, cleaning up for new schema...", count)
+		
+		// First delete all pekerjaan_alumni records to avoid foreign key constraint
+		var pekerjaanCount int64
+		database.DB.Table("pekerjaan_alumnis").Count(&pekerjaanCount)
+		if pekerjaanCount > 0 {
+			log.Printf("Deleting %d pekerjaan alumni records first...", pekerjaanCount)
+			result := database.DB.Exec("DELETE FROM pekerjaan_alumnis")
+			if result.Error != nil {
+				log.Printf("Warning: Could not clear pekerjaan_alumni table: %v", result.Error)
+			} else {
+				log.Printf("Successfully cleared %d pekerjaan alumni records", result.RowsAffected)
+			}
+		}
+		
+		// Now delete alumni records
+		result := database.DB.Exec("DELETE FROM alumnis")
+		if result.Error != nil {
+			log.Printf("Warning: Could not clear alumni table: %v", result.Error)
+		} else {
+			log.Printf("Successfully cleared %d alumni records for new schema", result.RowsAffected)
+		}
+	} else {
+		log.Println("No existing alumni records found")
+	}
+}
+
 func main() {
 	app := fiber.New()
 
@@ -81,6 +121,9 @@ func main() {
 
 	// Initialize database connection
 	database.ConnectDB()
+
+	// Fix existing data before migration
+	fixDataBeforeMigration()
 
 	// Auto migrate tables
 	database.DB.AutoMigrate(&models.User{}, &models.Mahasiswa{}, &models.Alumni{}, &models.PekerjaanAlumni{})

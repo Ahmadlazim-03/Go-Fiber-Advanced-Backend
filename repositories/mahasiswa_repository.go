@@ -44,7 +44,7 @@ func (r *mahasiswaRepository) GetWithPagination(pagination *models.PaginationReq
 	// Apply search filter if provided
 	if pagination.Search != "" {
 		searchPattern := "%" + pagination.Search + "%"
-		query = query.Where("nim ILIKE ? OR nama ILIKE ? OR jurusan ILIKE ? OR angkatan ILIKE ? OR email ILIKE ?", 
+		query = query.Where("nim ILIKE ? OR nama ILIKE ? OR jurusan ILIKE ? OR CAST(angkatan AS TEXT) ILIKE ? OR email ILIKE ?", 
 			searchPattern, searchPattern, searchPattern, searchPattern, searchPattern)
 	}
 	

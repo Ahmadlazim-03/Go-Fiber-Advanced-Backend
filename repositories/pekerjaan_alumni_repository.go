@@ -34,7 +34,7 @@ func NewPekerjaanAlumniRepository(db *gorm.DB) PekerjaanAlumniRepository {
 
 func (r *pekerjaanAlumniRepository) GetAll() ([]models.PekerjaanAlumni, error) {
 	var pekerjaans []models.PekerjaanAlumni
-	err := r.db.Preload("Alumni").Preload("Alumni.User").Find(&pekerjaans).Error
+	err := r.db.Preload("Alumni").Preload("Alumni.User").Where("deleted_at IS NULL").Find(&pekerjaans).Error
 	return pekerjaans, err
 }
 
@@ -46,15 +46,15 @@ func (r *pekerjaanAlumniRepository) GetWithPagination(pagination *models.Paginat
 	pagination.SetDefaults()
 	pagination.ValidateSortOrder()
 	
-	// Base query
-	query := r.db.Model(&models.PekerjaanAlumni{}).Preload("Alumni").Preload("Alumni.User")
+	// Base query with soft delete filter
+	query := r.db.Model(&models.PekerjaanAlumni{}).Preload("Alumni").Preload("Alumni.User").Where("deleted_at IS NULL")
 	
 	// Apply search filter if provided
 	if pagination.Search != "" {
 		searchPattern := "%" + pagination.Search + "%"
 		query = query.Joins("JOIN alumnis ON pekerjaan_alumnis.alumni_id = alumnis.id").
-			Where("pekerjaan_alumnis.posisi ILIKE ? OR pekerjaan_alumnis.nama_perusahaan ILIKE ? OR pekerjaan_alumnis.alamat_perusahaan ILIKE ? OR alumnis.nama ILIKE ?", 
-			searchPattern, searchPattern, searchPattern, searchPattern)
+			Where("pekerjaan_alumnis.posisi_jabatan ILIKE ? OR pekerjaan_alumnis.nama_perusahaan ILIKE ? OR pekerjaan_alumnis.bidang_industri ILIKE ? OR pekerjaan_alumnis.lokasi_kerja ILIKE ? OR alumnis.nama ILIKE ?", 
+			searchPattern, searchPattern, searchPattern, searchPattern, searchPattern)
 	}
 	
 	// Count total records with filters
@@ -73,7 +73,7 @@ func (r *pekerjaanAlumniRepository) GetWithPagination(pagination *models.Paginat
 
 func (r *pekerjaanAlumniRepository) GetByID(id uint) (*models.PekerjaanAlumni, error) {
 	var pekerjaan models.PekerjaanAlumni
-	err := r.db.Preload("Alumni").Preload("Alumni.User").First(&pekerjaan, id).Error
+	err := r.db.Preload("Alumni").Preload("Alumni.User").Where("deleted_at IS NULL").First(&pekerjaan, id).Error
 	if err != nil {
 		return nil, err
 	}
@@ -82,7 +82,7 @@ func (r *pekerjaanAlumniRepository) GetByID(id uint) (*models.PekerjaanAlumni, e
 
 func (r *pekerjaanAlumniRepository) GetByAlumniID(alumniID uint) ([]models.PekerjaanAlumni, error) {
 	var pekerjaans []models.PekerjaanAlumni
-	err := r.db.Preload("Alumni").Preload("Alumni.User").Where("alumni_id = ?", alumniID).Find(&pekerjaans).Error
+	err := r.db.Preload("Alumni").Preload("Alumni.User").Where("alumni_id = ? AND deleted_at IS NULL", alumniID).Find(&pekerjaans).Error
 	return pekerjaans, err
 }
 
@@ -90,7 +90,7 @@ func (r *pekerjaanAlumniRepository) GetByUserID(userID int) ([]models.PekerjaanA
 	var pekerjaans []models.PekerjaanAlumni
 	err := r.db.Preload("Alumni").Preload("Alumni.User").
 		Joins("JOIN alumnis ON pekerjaan_alumnis.alumni_id = alumnis.id").
-		Where("alumnis.user_id = ?", userID).
+		Where("alumnis.user_id = ? AND pekerjaan_alumnis.deleted_at IS NULL", userID).
 		Find(&pekerjaans).Error
 	return pekerjaans, err
 }

@@ -45,7 +45,12 @@ func (p *PaginationRequest) GetOffset() int {
 
 // ValidateSortOrder memvalidasi sort order
 func (p *PaginationRequest) ValidateSortOrder() {
-	if p.SortOrder != "ASC" && p.SortOrder != "DESC" {
+	// Convert to uppercase for consistency
+	if p.SortOrder == "asc" {
+		p.SortOrder = "ASC"
+	} else if p.SortOrder == "desc" {
+		p.SortOrder = "DESC"
+	} else if p.SortOrder != "ASC" && p.SortOrder != "DESC" {
 		p.SortOrder = "ASC"
 	}
 }
