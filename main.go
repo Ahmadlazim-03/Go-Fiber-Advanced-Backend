@@ -14,11 +14,19 @@ import (
 
 // createDefaultAdmin membuat user admin default jika belum ada
 func createDefaultAdmin() {
+	log.Println("Checking for default admin user...")
 
-	var user models.User
-	result := database.DB.Where("email = ?", "admin@example.com").First(&user)
+	// Check if admin user exists using raw SQL
+	var count int64
+	checkQuery := `SELECT COUNT(*) FROM users WHERE email = ?`
+	err := database.DB.Raw(checkQuery, "admin@example.com").Scan(&count).Error
+	
+	if err != nil {
+		log.Printf("Error checking admin user: %v", err)
+		return
+	}
 
-	if result.Error != nil {
+	if count == 0 {
 		// Hash password admin123
 		hashedPassword, err := utils.HashPassword("admin123")
 		if err != nil {
@@ -27,63 +35,23 @@ func createDefaultAdmin() {
 		}
 
 		// Admin user belum ada, buat yang baru
-		adminUser := models.User{
-			Username: "admin",
-			Email:    "admin@example.com",
-			Password: hashedPassword,
-			Role:     "admin",
-			IsActive: true,
-		}
-
-		if err := database.DB.Create(&adminUser).Error; err != nil {
-			log.Printf("Warning: Could not create default admin user: %v", err)
-		} else {
-			log.Println("Default admin user created: admin@example.com / admin123")
-		}
-	} else {
-		log.Println("Admin user already exists")
-	}
-}
-
-func fixDataBeforeMigration() {
-	// Check if alumnis table exists
-	if !database.DB.Migrator().HasTable("alumnis") {
-		return // Table doesn't exist yet, no need to fix
-	}
-
-	log.Println("Checking for existing alumni data...")
-
-	// Check if there are any existing alumni records
-	var count int64
-	database.DB.Table("alumnis").Count(&count)
-	
-	if count > 0 {
-		log.Printf("Found %d existing alumni records, cleaning up for new schema...", count)
+		insertQuery := `
+			INSERT INTO users (username, email, password, role, is_active, created_at, updated_at)
+			VALUES (?, ?, ?, ?, ?, NOW(), NOW())
+		`
 		
-		// First delete all pekerjaan_alumni records to avoid foreign key constraint
-		var pekerjaanCount int64
-		database.DB.Table("pekerjaan_alumnis").Count(&pekerjaanCount)
-		if pekerjaanCount > 0 {
-			log.Printf("Deleting %d pekerjaan alumni records first...", pekerjaanCount)
-			result := database.DB.Exec("DELETE FROM pekerjaan_alumnis")
-			if result.Error != nil {
-				log.Printf("Warning: Could not clear pekerjaan_alumni table: %v", result.Error)
-			} else {
-				log.Printf("Successfully cleared %d pekerjaan alumni records", result.RowsAffected)
-			}
-		}
-		
-		// Now delete alumni records
-		result := database.DB.Exec("DELETE FROM alumnis")
+		result := database.DB.Exec(insertQuery, "admin", "admin@example.com", hashedPassword, "admin", true)
 		if result.Error != nil {
-			log.Printf("Warning: Could not clear alumni table: %v", result.Error)
+			log.Printf("Warning: Could not create default admin user: %v", result.Error)
 		} else {
-			log.Printf("Successfully cleared %d alumni records for new schema", result.RowsAffected)
+			log.Println("✓ Default admin user created: admin@example.com / admin123")
 		}
 	} else {
-		log.Println("No existing alumni records found")
+		log.Println("✓ Admin user already exists")
 	}
 }
+
+
 
 func main() {
 	app := fiber.New()
@@ -112,7 +80,14 @@ func main() {
 	// Debug route untuk melihat semua users
 	app.Get("/debug/users", func(c *fiber.Ctx) error {
 		var users []models.User
-		database.DB.Find(&users)
+		query := `SELECT id, username, email, role, is_active, created_at, updated_at FROM users ORDER BY id`
+		err := database.DB.Raw(query).Scan(&users).Error
+		if err != nil {
+			return c.Status(500).JSON(fiber.Map{
+				"error": "Failed to fetch users",
+				"details": err.Error(),
+			})
+		}
 		return c.JSON(fiber.Map{
 			"users": users,
 			"count": len(users),
@@ -122,11 +97,13 @@ func main() {
 	// Initialize database connection
 	database.ConnectDB()
 
-	// Fix existing data before migration
-	fixDataBeforeMigration()
+	// Check database connection health
+	if err := database.CheckDatabaseConnection(); err != nil {
+		log.Fatalf("Database connection failed: %v", err)
+	}
 
-	// Auto migrate tables
-	database.DB.AutoMigrate(&models.User{}, &models.Mahasiswa{}, &models.Alumni{}, &models.PekerjaanAlumni{})
+	// Run database migrations (only creates tables if they don't exist)
+	database.RunMigrations()
 
 	// Create default admin user
 	createDefaultAdmin()

@@ -1,6 +1,7 @@
 package repositories
 
 import (
+	"fmt"
 	"modul4crud/models"
 
 	"gorm.io/gorm"
@@ -28,7 +29,14 @@ func NewUserRepository(db *gorm.DB) UserRepository {
 
 func (r *userRepository) GetAll() ([]models.User, error) {
 	var users []models.User
-	err := r.db.Find(&users).Error
+	
+	query := `
+		SELECT id, username, email, role, is_active, created_at, updated_at
+		FROM users
+		ORDER BY id DESC
+	`
+	
+	err := r.db.Raw(query).Scan(&users).Error
 	return users, err
 }
 
@@ -40,33 +48,57 @@ func (r *userRepository) GetWithPagination(pagination *models.PaginationRequest)
 	pagination.SetDefaults()
 	pagination.ValidateSortOrder()
 	
-	// Base query
-	query := r.db.Model(&models.User{})
+	// Count query
+	countQuery := `SELECT COUNT(*) FROM users`
 	
-	// Apply search filter if provided
+	// Search filter
+	searchCondition := ""
+	searchArgs := []interface{}{}
 	if pagination.Search != "" {
 		searchPattern := "%" + pagination.Search + "%"
-		query = query.Where("username ILIKE ? OR email ILIKE ? OR role ILIKE ?", 
-			searchPattern, searchPattern, searchPattern)
+		searchCondition = ` WHERE (
+			username ILIKE ? OR 
+			email ILIKE ? OR 
+			role ILIKE ?
+		)`
+		searchArgs = []interface{}{searchPattern, searchPattern, searchPattern}
 	}
 	
-	// Count total records with filters
-	if err := query.Count(&total).Error; err != nil {
+	// Execute count query
+	err := r.db.Raw(countQuery+searchCondition, searchArgs...).Scan(&total).Error
+	if err != nil {
 		return nil, 0, err
 	}
 	
-	// Apply sorting and pagination
-	err := query.Order(pagination.SortBy + " " + pagination.SortOrder).
-		Limit(pagination.Limit).
-		Offset(pagination.GetOffset()).
-		Find(&users).Error
+	// Data query
+	dataQuery := `
+		SELECT id, username, email, role, is_active, created_at, updated_at
+		FROM users
+	`
 	
+	// Add search condition to data query
+	dataQuery += searchCondition
+	
+	// Add sorting and pagination
+	dataQuery += fmt.Sprintf(" ORDER BY %s %s LIMIT ? OFFSET ?", pagination.SortBy, pagination.SortOrder)
+	
+	// Prepare arguments for data query
+	dataArgs := append(searchArgs, pagination.Limit, pagination.GetOffset())
+	
+	err = r.db.Raw(dataQuery, dataArgs...).Scan(&users).Error
 	return users, total, err
 }
 
 func (r *userRepository) GetByID(id int) (*models.User, error) {
 	var user models.User
-	err := r.db.First(&user, id).Error
+	
+	query := `
+		SELECT id, username, email, password, role, is_active, created_at, updated_at
+		FROM users
+		WHERE id = ?
+	`
+	
+	err := r.db.Raw(query, id).Scan(&user).Error
 	if err != nil {
 		return nil, err
 	}
@@ -75,7 +107,14 @@ func (r *userRepository) GetByID(id int) (*models.User, error) {
 
 func (r *userRepository) GetByEmail(email string) (*models.User, error) {
 	var user models.User
-	err := r.db.Where("email = ?", email).First(&user).Error
+	
+	query := `
+		SELECT id, username, email, password, role, is_active, created_at, updated_at
+		FROM users
+		WHERE email = ?
+	`
+	
+	err := r.db.Raw(query, email).Scan(&user).Error
 	if err != nil {
 		return nil, err
 	}
@@ -84,7 +123,14 @@ func (r *userRepository) GetByEmail(email string) (*models.User, error) {
 
 func (r *userRepository) GetByUsername(username string) (*models.User, error) {
 	var user models.User
-	err := r.db.Where("username = ?", username).First(&user).Error
+	
+	query := `
+		SELECT id, username, email, password, role, is_active, created_at, updated_at
+		FROM users
+		WHERE username = ?
+	`
+	
+	err := r.db.Raw(query, username).Scan(&user).Error
 	if err != nil {
 		return nil, err
 	}
@@ -92,19 +138,49 @@ func (r *userRepository) GetByUsername(username string) (*models.User, error) {
 }
 
 func (r *userRepository) Create(user *models.User) error {
-	return r.db.Create(user).Error
+	query := `
+		INSERT INTO users 
+		(username, email, password, role, is_active, created_at, updated_at)
+		VALUES (?, ?, ?, ?, ?, NOW(), NOW())
+		RETURNING id, created_at, updated_at
+	`
+	
+	return r.db.Raw(query,
+		user.Username,
+		user.Email,
+		user.Password,
+		user.Role,
+		user.IsActive,
+	).Scan(user).Error
 }
 
 func (r *userRepository) Update(user *models.User) error {
-	return r.db.Save(user).Error
+	query := `
+		UPDATE users 
+		SET username = ?, email = ?, password = ?, role = ?, is_active = ?, updated_at = NOW()
+		WHERE id = ?
+		RETURNING updated_at
+	`
+	
+	return r.db.Raw(query,
+		user.Username,
+		user.Email,
+		user.Password,
+		user.Role,
+		user.IsActive,
+		user.ID,
+	).Scan(user).Error
 }
 
 func (r *userRepository) Delete(id int) error {
-	return r.db.Delete(&models.User{}, id).Error
+	query := `DELETE FROM users WHERE id = ?`
+	result := r.db.Exec(query, id)
+	return result.Error
 }
 
 func (r *userRepository) Count() (int64, error) {
 	var count int64
-	err := r.db.Model(&models.User{}).Count(&count).Error
+	query := `SELECT COUNT(*) FROM users`
+	err := r.db.Raw(query).Scan(&count).Error
 	return count, err
 }

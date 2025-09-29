@@ -1,6 +1,7 @@
 package repositories
 
 import (
+	"fmt"
 	"modul4crud/models"
 
 	"gorm.io/gorm"
@@ -26,7 +27,14 @@ func NewMahasiswaRepository(db *gorm.DB) MahasiswaRepository {
 
 func (r *mahasiswaRepository) GetAll() ([]models.Mahasiswa, error) {
 	var mahasiswas []models.Mahasiswa
-	err := r.db.Find(&mahasiswas).Error
+	
+	query := `
+		SELECT id, nim, nama, jurusan, angkatan, email, created_at, updated_at
+		FROM mahasiswas
+		ORDER BY id DESC
+	`
+	
+	err := r.db.Raw(query).Scan(&mahasiswas).Error
 	return mahasiswas, err
 }
 
@@ -38,33 +46,59 @@ func (r *mahasiswaRepository) GetWithPagination(pagination *models.PaginationReq
 	pagination.SetDefaults()
 	pagination.ValidateSortOrder()
 	
-	// Base query
-	query := r.db.Model(&models.Mahasiswa{})
+	// Count query
+	countQuery := `SELECT COUNT(*) FROM mahasiswas`
 	
-	// Apply search filter if provided
+	// Search filter
+	searchCondition := ""
+	searchArgs := []interface{}{}
 	if pagination.Search != "" {
 		searchPattern := "%" + pagination.Search + "%"
-		query = query.Where("nim ILIKE ? OR nama ILIKE ? OR jurusan ILIKE ? OR CAST(angkatan AS TEXT) ILIKE ? OR email ILIKE ?", 
-			searchPattern, searchPattern, searchPattern, searchPattern, searchPattern)
+		searchCondition = ` WHERE (
+			nim ILIKE ? OR 
+			nama ILIKE ? OR 
+			jurusan ILIKE ? OR 
+			CAST(angkatan AS TEXT) ILIKE ? OR 
+			email ILIKE ?
+		)`
+		searchArgs = []interface{}{searchPattern, searchPattern, searchPattern, searchPattern, searchPattern}
 	}
 	
-	// Count total records with filters
-	if err := query.Count(&total).Error; err != nil {
+	// Execute count query
+	err := r.db.Raw(countQuery+searchCondition, searchArgs...).Scan(&total).Error
+	if err != nil {
 		return nil, 0, err
 	}
 	
-	// Apply sorting and pagination
-	err := query.Order(pagination.SortBy + " " + pagination.SortOrder).
-		Limit(pagination.Limit).
-		Offset(pagination.GetOffset()).
-		Find(&mahasiswas).Error
+	// Data query
+	dataQuery := `
+		SELECT id, nim, nama, jurusan, angkatan, email, created_at, updated_at
+		FROM mahasiswas
+	`
 	
+	// Add search condition to data query
+	dataQuery += searchCondition
+	
+	// Add sorting and pagination
+	dataQuery += fmt.Sprintf(" ORDER BY %s %s LIMIT ? OFFSET ?", pagination.SortBy, pagination.SortOrder)
+	
+	// Prepare arguments for data query
+	dataArgs := append(searchArgs, pagination.Limit, pagination.GetOffset())
+	
+	err = r.db.Raw(dataQuery, dataArgs...).Scan(&mahasiswas).Error
 	return mahasiswas, total, err
 }
 
 func (r *mahasiswaRepository) GetByID(id uint) (*models.Mahasiswa, error) {
 	var mahasiswa models.Mahasiswa
-	err := r.db.First(&mahasiswa, id).Error
+	
+	query := `
+		SELECT id, nim, nama, jurusan, angkatan, email, created_at, updated_at
+		FROM mahasiswas
+		WHERE id = ?
+	`
+	
+	err := r.db.Raw(query, id).Scan(&mahasiswa).Error
 	if err != nil {
 		return nil, err
 	}
@@ -72,19 +106,49 @@ func (r *mahasiswaRepository) GetByID(id uint) (*models.Mahasiswa, error) {
 }
 
 func (r *mahasiswaRepository) Create(mahasiswa *models.Mahasiswa) error {
-	return r.db.Create(mahasiswa).Error
+	query := `
+		INSERT INTO mahasiswas 
+		(nim, nama, jurusan, angkatan, email, created_at, updated_at)
+		VALUES (?, ?, ?, ?, ?, NOW(), NOW())
+		RETURNING id, created_at, updated_at
+	`
+	
+	return r.db.Raw(query,
+		mahasiswa.NIM,
+		mahasiswa.Nama,
+		mahasiswa.Jurusan,
+		mahasiswa.Angkatan,
+		mahasiswa.Email,
+	).Scan(mahasiswa).Error
 }
 
 func (r *mahasiswaRepository) Update(mahasiswa *models.Mahasiswa) error {
-	return r.db.Save(mahasiswa).Error
+	query := `
+		UPDATE mahasiswas 
+		SET nim = ?, nama = ?, jurusan = ?, angkatan = ?, email = ?, updated_at = NOW()
+		WHERE id = ?
+		RETURNING updated_at
+	`
+	
+	return r.db.Raw(query,
+		mahasiswa.NIM,
+		mahasiswa.Nama,
+		mahasiswa.Jurusan,
+		mahasiswa.Angkatan,
+		mahasiswa.Email,
+		mahasiswa.ID,
+	).Scan(mahasiswa).Error
 }
 
 func (r *mahasiswaRepository) Delete(id uint) error {
-	return r.db.Delete(&models.Mahasiswa{}, id).Error
+	query := `DELETE FROM mahasiswas WHERE id = ?`
+	result := r.db.Exec(query, id)
+	return result.Error
 }
 
 func (r *mahasiswaRepository) Count() (int64, error) {
 	var count int64
-	err := r.db.Model(&models.Mahasiswa{}).Count(&count).Error
+	query := `SELECT COUNT(*) FROM mahasiswas`
+	err := r.db.Raw(query).Scan(&count).Error
 	return count, err
 }

@@ -1,6 +1,7 @@
 package repositories
 
 import (
+	"fmt"
 	"modul4crud/models"
 
 	"gorm.io/gorm"
@@ -27,7 +28,22 @@ func NewAlumniRepository(db *gorm.DB) AlumniRepository {
 
 func (r *alumniRepository) GetAll() ([]models.Alumni, error) {
 	var alumnis []models.Alumni
-	err := r.db.Preload("User").Preload("Pekerjaan").Find(&alumnis).Error
+	
+	query := `
+		SELECT 
+			a.id, a.user_id, a.nim, a.nama, a.jurusan, 
+			a.angkatan, a.tahun_lulus, a.no_telepon, a.alamat, 
+			a.created_at, a.updated_at,
+			u.id as "User__id", u.username as "User__username", 
+			u.email as "User__email", u.role as "User__role", 
+			u.is_active as "User__is_active", u.created_at as "User__created_at", 
+			u.updated_at as "User__updated_at"
+		FROM alumnis a
+		LEFT JOIN users u ON a.user_id = u.id
+		ORDER BY a.id DESC
+	`
+	
+	err := r.db.Raw(query).Scan(&alumnis).Error
 	return alumnis, err
 }
 
@@ -39,34 +55,79 @@ func (r *alumniRepository) GetWithPagination(pagination *models.PaginationReques
 	pagination.SetDefaults()
 	pagination.ValidateSortOrder()
 	
-	// Base query
-	query := r.db.Model(&models.Alumni{}).Preload("User").Preload("Pekerjaan")
+	// Count query
+	countQuery := `
+		SELECT COUNT(*) 
+		FROM alumnis a
+		LEFT JOIN users u ON a.user_id = u.id
+	`
 	
-	// Apply search filter if provided
+	// Search filter
+	searchCondition := ""
+	searchArgs := []interface{}{}
 	if pagination.Search != "" {
 		searchPattern := "%" + pagination.Search + "%"
-		query = query.Joins("JOIN users ON alumnis.user_id = users.id").
-			Where("nim ILIKE ? OR nama ILIKE ? OR jurusan ILIKE ? OR CAST(tahun_lulus AS TEXT) ILIKE ? OR users.email ILIKE ?", 
-			searchPattern, searchPattern, searchPattern, searchPattern, searchPattern)
+		searchCondition = ` WHERE (
+			a.nim ILIKE ? OR 
+			a.nama ILIKE ? OR 
+			a.jurusan ILIKE ? OR 
+			CAST(a.tahun_lulus AS TEXT) ILIKE ? OR 
+			u.email ILIKE ?
+		)`
+		searchArgs = []interface{}{searchPattern, searchPattern, searchPattern, searchPattern, searchPattern}
 	}
 	
-	// Count total records with filters
-	if err := query.Count(&total).Error; err != nil {
+	// Execute count query
+	err := r.db.Raw(countQuery+searchCondition, searchArgs...).Scan(&total).Error
+	if err != nil {
 		return nil, 0, err
 	}
 	
-	// Apply sorting and pagination
-	err := query.Order(pagination.SortBy + " " + pagination.SortOrder).
-		Limit(pagination.Limit).
-		Offset(pagination.GetOffset()).
-		Find(&alumnis).Error
+	// Data query
+	dataQuery := `
+		SELECT 
+			a.id, a.user_id, a.nim, a.nama, a.jurusan, 
+			a.angkatan, a.tahun_lulus, a.no_telepon, a.alamat, 
+			a.created_at, a.updated_at,
+			u.id as "User__id", u.username as "User__username", 
+			u.email as "User__email", u.role as "User__role", 
+			u.is_active as "User__is_active", u.created_at as "User__created_at", 
+			u.updated_at as "User__updated_at"
+		FROM alumnis a
+		LEFT JOIN users u ON a.user_id = u.id
+	`
 	
+	// Add search condition to data query
+	dataQuery += searchCondition
+	
+	// Add sorting and pagination
+	dataQuery += fmt.Sprintf(" ORDER BY a.%s %s LIMIT ? OFFSET ?", pagination.SortBy, pagination.SortOrder)
+	
+	// Prepare arguments for data query
+	dataArgs := append(searchArgs, pagination.Limit, pagination.GetOffset())
+	
+	err = r.db.Raw(dataQuery, dataArgs...).Scan(&alumnis).Error
 	return alumnis, total, err
 }
 
 func (r *alumniRepository) GetByID(id uint) (*models.Alumni, error) {
 	var alumni models.Alumni
-	err := r.db.Preload("User").Preload("Pekerjaan").First(&alumni, id).Error
+	
+	query := `
+		SELECT 
+			a.id, a.user_id, a.nim, a.nama, a.jurusan, 
+			a.angkatan, a.tahun_lulus, a.no_telepon, a.alamat, 
+			a.created_at, a.updated_at,
+			u.id as "User__id", u.username as "User__username", 
+			u.email as "User__email", u.role as "User__role", 
+			u.is_active as "User__is_active", u.created_at as "User__created_at", 
+			u.updated_at as "User__updated_at"
+		FROM alumnis a
+		LEFT JOIN users u ON a.user_id = u.id
+		WHERE a.id = ?
+	`
+	
+	err := r.db.Raw(query, id).Scan(&alumni).Error
 	if err != nil {
 		return nil, err
 	}
@@ -75,7 +136,22 @@ func (r *alumniRepository) GetByID(id uint) (*models.Alumni, error) {
 
 func (r *alumniRepository) GetByUserID(userID int) (*models.Alumni, error) {
 	var alumni models.Alumni
-	err := r.db.Preload("User").Preload("Pekerjaan").Where("user_id = ?", userID).First(&alumni).Error
+	
+	query := `
+		SELECT 
+			a.id, a.user_id, a.nim, a.nama, a.jurusan, 
+			a.angkatan, a.tahun_lulus, a.no_telepon, a.alamat, 
+			a.created_at, a.updated_at,
+			u.id as "User__id", u.username as "User__username", 
+			u.email as "User__email", u.role as "User__role", 
+			u.is_active as "User__is_active", u.created_at as "User__created_at", 
+			u.updated_at as "User__updated_at"
+		FROM alumnis a
+		LEFT JOIN users u ON a.user_id = u.id
+		WHERE a.user_id = ?
+	`
+	
+	err := r.db.Raw(query, userID).Scan(&alumni).Error
 	if err != nil {
 		return nil, err
 	}
@@ -83,19 +159,55 @@ func (r *alumniRepository) GetByUserID(userID int) (*models.Alumni, error) {
 }
 
 func (r *alumniRepository) Create(alumni *models.Alumni) error {
-	return r.db.Create(alumni).Error
+	query := `
+		INSERT INTO alumnis 
+		(user_id, nim, nama, jurusan, angkatan, tahun_lulus, no_telepon, alamat, created_at, updated_at)
+		VALUES (?, ?, ?, ?, ?, ?, ?, ?, NOW(), NOW())
+		RETURNING id, created_at, updated_at
+	`
+	
+	return r.db.Raw(query,
+		alumni.UserID,
+		alumni.NIM,
+		alumni.Nama,
+		alumni.Jurusan,
+		alumni.Angkatan,
+		alumni.TahunLulus,
+		alumni.NoTelepon,
+		alumni.Alamat,
+	).Scan(alumni).Error
 }
 
 func (r *alumniRepository) Update(alumni *models.Alumni) error {
-	return r.db.Save(alumni).Error
+	query := `
+		UPDATE alumnis 
+		SET nim = ?, nama = ?, jurusan = ?, angkatan = ?, 
+		    tahun_lulus = ?, no_telepon = ?, alamat = ?, updated_at = NOW()
+		WHERE id = ?
+		RETURNING updated_at
+	`
+	
+	return r.db.Raw(query,
+		alumni.NIM,
+		alumni.Nama,
+		alumni.Jurusan,
+		alumni.Angkatan,
+		alumni.TahunLulus,
+		alumni.NoTelepon,
+		alumni.Alamat,
+		alumni.ID,
+	).Scan(alumni).Error
 }
 
 func (r *alumniRepository) Delete(id uint) error {
-	return r.db.Delete(&models.Alumni{}, id).Error
+	query := `DELETE FROM alumnis WHERE id = ?`
+	result := r.db.Exec(query, id)
+	return result.Error
 }
 
 func (r *alumniRepository) Count() (int64, error) {
 	var count int64
-	err := r.db.Model(&models.Alumni{}).Count(&count).Error
+	query := `SELECT COUNT(*) FROM alumnis`
+	err := r.db.Raw(query).Scan(&count).Error
 	return count, err
 }
