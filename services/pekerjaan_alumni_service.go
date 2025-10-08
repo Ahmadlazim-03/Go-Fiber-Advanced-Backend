@@ -167,33 +167,28 @@ func (s *PekerjaanAlumniService) GetAlumniCountByCompany(c *fiber.Ctx) error {
 	})
 }
 
-// Soft Delete Methods
 func (s *PekerjaanAlumniService) SoftDeletePekerjaanAlumni(c *fiber.Ctx) error {
 	id, err := strconv.ParseUint(c.Params("id"), 10, 32)
 	if err != nil {
 		return c.Status(400).JSON(fiber.Map{"error": "Invalid ID"})
 	}
 
-	// Get user info from middleware locals
 	userRole, ok := c.Locals("role").(string)
 	if !ok {
 		return c.Status(401).JSON(fiber.Map{"error": "Role tidak ditemukan"})
 	}
-	
+
 	userID, ok := c.Locals("user_id").(int)
 	if !ok {
 		return c.Status(401).JSON(fiber.Map{"error": "User ID tidak ditemukan"})
 	}
 
-	// Check authorization
 	if userRole != "admin" {
-		// If not admin, check if user owns this pekerjaan through alumni
 		pekerjaan, err := s.pekerjaanRepo.GetByID(uint(id))
 		if err != nil {
 			return c.Status(404).JSON(fiber.Map{"error": "Pekerjaan not found"})
 		}
 
-		// Check if the pekerjaan belongs to the user's alumni profile
 		if pekerjaan.Alumni.UserID != userID {
 			return c.Status(403).JSON(fiber.Map{"error": "Access denied. You can only delete your own job records."})
 		}
@@ -212,18 +207,11 @@ func (s *PekerjaanAlumniService) SoftDeletePekerjaanByAlumni(c *fiber.Ctx) error
 	if err != nil {
 		return c.Status(400).JSON(fiber.Map{"error": "Invalid Alumni ID"})
 	}
-
-	// Get user info from middleware locals
 	userRole, ok := c.Locals("role").(string)
 	if !ok {
 		return c.Status(401).JSON(fiber.Map{"error": "Role tidak ditemukan"})
 	}
-
-	// Check authorization
 	if userRole != "admin" {
-		// If not admin, check if user owns this alumni profile
-		// This requires getting alumni by ID and checking user_id
-		// For now, we'll implement basic check
 		return c.Status(403).JSON(fiber.Map{"error": "Access denied. Only admin can perform bulk operations."})
 	}
 
@@ -236,7 +224,6 @@ func (s *PekerjaanAlumniService) SoftDeletePekerjaanByAlumni(c *fiber.Ctx) error
 }
 
 func (s *PekerjaanAlumniService) RestorePekerjaanAlumni(c *fiber.Ctx) error {
-	// Only admin can restore
 	userRole, ok := c.Locals("role").(string)
 	if !ok {
 		return c.Status(401).JSON(fiber.Map{"error": "Role tidak ditemukan"})
@@ -260,7 +247,6 @@ func (s *PekerjaanAlumniService) RestorePekerjaanAlumni(c *fiber.Ctx) error {
 }
 
 func (s *PekerjaanAlumniService) GetDeletedPekerjaan(c *fiber.Ctx) error {
-	// Only admin can view deleted data
 	userRole, ok := c.Locals("role").(string)
 	if !ok {
 		return c.Status(401).JSON(fiber.Map{"error": "Role tidak ditemukan"})
@@ -279,7 +265,6 @@ func (s *PekerjaanAlumniService) GetDeletedPekerjaan(c *fiber.Ctx) error {
 }
 
 func (s *PekerjaanAlumniService) GetPekerjaanByUser(c *fiber.Ctx) error {
-	// Get user info from middleware locals
 	userID, ok := c.Locals("user_id").(int)
 	if !ok {
 		return c.Status(401).JSON(fiber.Map{"error": "User ID tidak ditemukan"})

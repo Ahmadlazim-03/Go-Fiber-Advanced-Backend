@@ -63,26 +63,26 @@ type UpdateAlumniRequest struct {
 
 // Request struct untuk PekerjaanAlumni
 type CreatePekerjaanAlumniRequest struct {
-	AlumniID               uint      `json:"alumni_id"`
-	NamaPerusahaan         string    `json:"nama_perusahaan"`
-	PosisiJabatan          string    `json:"posisi_jabatan"`
-	BidangIndustri         string    `json:"bidang_industri"`
-	LokasiKerja            string    `json:"lokasi_kerja"`
-	GajiRange              string    `json:"gaji_range"`
-	TanggalMulaiKerja      time.Time `json:"tanggal_mulai_kerja"`
-	TanggalSelesaiKerja    *time.Time `json:"tanggal_selesai_kerja"`
-	StatusPekerjaan        string    `json:"status_pekerjaan"`
-	DeskripsiPekerjaan     string    `json:"deskripsi_pekerjaan"`
+	AlumniID            uint       `json:"alumni_id"`
+	NamaPerusahaan      string     `json:"nama_perusahaan"`
+	PosisiJabatan       string     `json:"posisi_jabatan"`
+	BidangIndustri      string     `json:"bidang_industri"`
+	LokasiKerja         string     `json:"lokasi_kerja"`
+	GajiRange           string     `json:"gaji_range"`
+	TanggalMulaiKerja   time.Time  `json:"tanggal_mulai_kerja"`
+	TanggalSelesaiKerja *time.Time `json:"tanggal_selesai_kerja"`
+	StatusPekerjaan     string     `json:"status_pekerjaan"`
+	DeskripsiPekerjaan  string     `json:"deskripsi_pekerjaan"`
 }
 
 type UpdatePekerjaanAlumniRequest struct {
-	NamaPerusahaan         string     `json:"nama_perusahaan"`
-	PosisiJabatan          string     `json:"posisi_jabatan"`
-	BidangIndustri         string     `json:"bidang_industri"`
-	LokasiKerja            string     `json:"lokasi_kerja"`
-	GajiRange              string     `json:"gaji_range"`
-	TanggalMulaiKerja      time.Time  `json:"tanggal_mulai_kerja"`
-	TanggalSelesaiKerja    *time.Time `json:"tanggal_selesai_kerja"`
-	StatusPekerjaan        string     `json:"status_pekerjaan"`
-	DeskripsiPekerjaan     string     `json:"deskripsi_pekerjaan"`
+	NamaPerusahaan      string     `json:"nama_perusahaan"`
+	PosisiJabatan       string     `json:"posisi_jabatan"`
+	BidangIndustri      string     `json:"bidang_industri"`
+	LokasiKerja         string     `json:"lokasi_kerja"`
+	GajiRange           string     `json:"gaji_range"`
+	TanggalMulaiKerja   time.Time  `json:"tanggal_mulai_kerja"`
+	TanggalSelesaiKerja *time.Time `json:"tanggal_selesai_kerja"`
+	StatusPekerjaan     string     `json:"status_pekerjaan"`
+	DeskripsiPekerjaan  string     `json:"deskripsi_pekerjaan"`
 }

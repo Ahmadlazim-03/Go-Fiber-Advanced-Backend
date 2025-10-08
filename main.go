@@ -20,7 +20,7 @@ func createDefaultAdmin() {
 	var count int64
 	checkQuery := `SELECT COUNT(*) FROM users WHERE email = ?`
 	err := database.DB.Raw(checkQuery, "admin@example.com").Scan(&count).Error
-	
+
 	if err != nil {
 		log.Printf("Error checking admin user: %v", err)
 		return
@@ -39,7 +39,7 @@ func createDefaultAdmin() {
 			INSERT INTO users (username, email, password, role, is_active, created_at, updated_at)
 			VALUES (?, ?, ?, ?, ?, NOW(), NOW())
 		`
-		
+
 		result := database.DB.Exec(insertQuery, "admin", "admin@example.com", hashedPassword, "admin", true)
 		if result.Error != nil {
 			log.Printf("Warning: Could not create default admin user: %v", result.Error)
@@ -50,8 +50,6 @@ func createDefaultAdmin() {
 		log.Println("✓ Admin user already exists")
 	}
 }
-
-
 
 func main() {
 	app := fiber.New()
@@ -84,7 +82,7 @@ func main() {
 		err := database.DB.Raw(query).Scan(&users).Error
 		if err != nil {
 			return c.Status(500).JSON(fiber.Map{
-				"error": "Failed to fetch users",
+				"error":   "Failed to fetch users",
 				"details": err.Error(),
 			})
 		}
@@ -116,9 +114,10 @@ func main() {
 
 	// Initialize services - all with direct repository access
 	authService := services.NewAuthService(userRepo)
-	mahasiswaService := services.NewMahasiswaService(mahasiswaRepo) // Direct repository
-	alumniService := services.NewAlumniService(alumniRepo) // Direct repository
+	mahasiswaService := services.NewMahasiswaService(mahasiswaRepo)       // Direct repository
+	alumniService := services.NewAlumniService(alumniRepo)                // Direct repository
 	pekerjaanService := services.NewPekerjaanAlumniService(pekerjaanRepo) // Direct repository
+	trashService := services.NewTrashService(pekerjaanRepo)               // Trash service untuk data soft deleted
 
 	// Protected dashboard route - perlu autentikasi JWT
 	app.Get("/dashboard", func(c *fiber.Ctx) error {
@@ -128,7 +127,7 @@ func main() {
 	})
 
 	// Setup API routes with dependency injection
-	routes.SetupRoutes(app, mahasiswaService, alumniService, pekerjaanService, authService)
+	routes.SetupRoutes(app, mahasiswaService, alumniService, pekerjaanService, authService, trashService)
 
 	log.Println("Server running on http://localhost:8080")
 	log.Fatal(app.Listen(":8080"))

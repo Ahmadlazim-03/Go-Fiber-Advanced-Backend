@@ -3,6 +3,7 @@ package repositories
 import (
 	"fmt"
 	"modul4crud/models"
+	"time"
 
 	"gorm.io/gorm"
 )
@@ -34,7 +35,7 @@ func NewPekerjaanAlumniRepository(db *gorm.DB) PekerjaanAlumniRepository {
 
 func (r *pekerjaanAlumniRepository) GetAll() ([]models.PekerjaanAlumni, error) {
 	var pekerjaans []models.PekerjaanAlumni
-	
+
 	query := `
 		SELECT 
 			pa.id, pa.alumni_id, pa.nama_perusahaan, pa.posisi_jabatan, 
@@ -58,7 +59,7 @@ func (r *pekerjaanAlumniRepository) GetAll() ([]models.PekerjaanAlumni, error) {
 		WHERE pa.deleted_at IS NULL
 		ORDER BY pa.id DESC
 	`
-	
+
 	err := r.db.Raw(query).Scan(&pekerjaans).Error
 	return pekerjaans, err
 }
@@ -66,11 +67,11 @@ func (r *pekerjaanAlumniRepository) GetAll() ([]models.PekerjaanAlumni, error) {
 func (r *pekerjaanAlumniRepository) GetWithPagination(pagination *models.PaginationRequest) ([]models.PekerjaanAlumni, int64, error) {
 	var pekerjaans []models.PekerjaanAlumni
 	var total int64
-	
+
 	// Set default values
 	pagination.SetDefaults()
 	pagination.ValidateSortOrder()
-	
+
 	// Count query
 	countQuery := `
 		SELECT COUNT(*) 
@@ -78,7 +79,7 @@ func (r *pekerjaanAlumniRepository) GetWithPagination(pagination *models.Paginat
 		LEFT JOIN alumnis a ON pa.alumni_id = a.id
 		WHERE pa.deleted_at IS NULL
 	`
-	
+
 	// Search filter
 	searchCondition := ""
 	searchArgs := []interface{}{}
@@ -93,13 +94,13 @@ func (r *pekerjaanAlumniRepository) GetWithPagination(pagination *models.Paginat
 		)`
 		searchArgs = []interface{}{searchPattern, searchPattern, searchPattern, searchPattern, searchPattern}
 	}
-	
+
 	// Execute count query
 	err := r.db.Raw(countQuery+searchCondition, searchArgs...).Scan(&total).Error
 	if err != nil {
 		return nil, 0, err
 	}
-	
+
 	// Data query
 	dataQuery := `
 		SELECT 
@@ -123,23 +124,23 @@ func (r *pekerjaanAlumniRepository) GetWithPagination(pagination *models.Paginat
 		LEFT JOIN users u ON a.user_id = u.id
 		WHERE pa.deleted_at IS NULL
 	`
-	
+
 	// Add search condition to data query
 	dataQuery += searchCondition
-	
+
 	// Add sorting and pagination
 	dataQuery += fmt.Sprintf(" ORDER BY pa.%s %s LIMIT ? OFFSET ?", pagination.SortBy, pagination.SortOrder)
-	
+
 	// Prepare arguments for data query
 	dataArgs := append(searchArgs, pagination.Limit, pagination.GetOffset())
-	
+
 	err = r.db.Raw(dataQuery, dataArgs...).Scan(&pekerjaans).Error
 	return pekerjaans, total, err
 }
 
 func (r *pekerjaanAlumniRepository) GetByID(id uint) (*models.PekerjaanAlumni, error) {
 	var pekerjaan models.PekerjaanAlumni
-	
+
 	query := `
 		SELECT 
 			pa.id, pa.alumni_id, pa.nama_perusahaan, pa.posisi_jabatan, 
@@ -162,7 +163,7 @@ func (r *pekerjaanAlumniRepository) GetByID(id uint) (*models.PekerjaanAlumni, e
 		LEFT JOIN users u ON a.user_id = u.id
 		WHERE pa.id = ? AND pa.deleted_at IS NULL
 	`
-	
+
 	err := r.db.Raw(query, id).Scan(&pekerjaan).Error
 	if err != nil {
 		return nil, err
@@ -172,7 +173,7 @@ func (r *pekerjaanAlumniRepository) GetByID(id uint) (*models.PekerjaanAlumni, e
 
 func (r *pekerjaanAlumniRepository) GetByAlumniID(alumniID uint) ([]models.PekerjaanAlumni, error) {
 	var pekerjaans []models.PekerjaanAlumni
-	
+
 	query := `
 		SELECT 
 			pa.id, pa.alumni_id, pa.nama_perusahaan, pa.posisi_jabatan, 
@@ -196,14 +197,14 @@ func (r *pekerjaanAlumniRepository) GetByAlumniID(alumniID uint) ([]models.Peker
 		WHERE pa.alumni_id = ? AND pa.deleted_at IS NULL
 		ORDER BY pa.id DESC
 	`
-	
+
 	err := r.db.Raw(query, alumniID).Scan(&pekerjaans).Error
 	return pekerjaans, err
 }
 
 func (r *pekerjaanAlumniRepository) GetByUserID(userID int) ([]models.PekerjaanAlumni, error) {
 	var pekerjaans []models.PekerjaanAlumni
-	
+
 	query := `
 		SELECT 
 			pa.id, pa.alumni_id, pa.nama_perusahaan, pa.posisi_jabatan, 
@@ -227,7 +228,7 @@ func (r *pekerjaanAlumniRepository) GetByUserID(userID int) ([]models.PekerjaanA
 		WHERE a.user_id = ? AND pa.deleted_at IS NULL
 		ORDER BY pa.id DESC
 	`
-	
+
 	err := r.db.Raw(query, userID).Scan(&pekerjaans).Error
 	return pekerjaans, err
 }
@@ -241,7 +242,7 @@ func (r *pekerjaanAlumniRepository) Create(pekerjaan *models.PekerjaanAlumni) er
 		VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NOW(), NOW())
 		RETURNING id, created_at, updated_at
 	`
-	
+
 	return r.db.Raw(query,
 		pekerjaan.AlumniID,
 		pekerjaan.NamaPerusahaan,
@@ -266,7 +267,7 @@ func (r *pekerjaanAlumniRepository) Update(pekerjaan *models.PekerjaanAlumni) er
 		WHERE id = ? AND deleted_at IS NULL
 		RETURNING updated_at
 	`
-	
+
 	return r.db.Raw(query,
 		pekerjaan.NamaPerusahaan,
 		pekerjaan.PosisiJabatan,
@@ -282,8 +283,24 @@ func (r *pekerjaanAlumniRepository) Update(pekerjaan *models.PekerjaanAlumni) er
 }
 
 func (r *pekerjaanAlumniRepository) Delete(id uint) error {
-	query := `DELETE FROM pekerjaan_alumnis WHERE id = ?`
+	// Cek apakah data sudah soft deleted
+	var deletedAt *time.Time
+	checkQuery := `SELECT deleted_at FROM pekerjaan_alumnis WHERE id = ?`
+	err := r.db.Raw(checkQuery, id).Scan(&deletedAt).Error
+	if err != nil {
+		return fmt.Errorf("data pekerjaan alumni tidak ditemukan")
+	}
+
+	// Hanya bisa hard delete jika sudah soft deleted
+	if deletedAt == nil {
+		return fmt.Errorf("tidak bisa hard delete: data belum di-soft delete terlebih dahulu")
+	}
+
+	query := `DELETE FROM pekerjaan_alumnis WHERE id = ? AND deleted_at IS NOT NULL`
 	result := r.db.Exec(query, id)
+	if result.RowsAffected == 0 {
+		return fmt.Errorf("tidak ada data yang dihapus - pastikan data sudah di-soft delete")
+	}
 	return result.Error
 }
 
@@ -322,7 +339,7 @@ func (r *pekerjaanAlumniRepository) Restore(id uint) error {
 
 func (r *pekerjaanAlumniRepository) GetDeleted() ([]models.PekerjaanAlumni, error) {
 	var pekerjaans []models.PekerjaanAlumni
-	
+
 	query := `
 		SELECT 
 			pa.id, pa.alumni_id, pa.nama_perusahaan, pa.posisi_jabatan, 
@@ -346,7 +363,7 @@ func (r *pekerjaanAlumniRepository) GetDeleted() ([]models.PekerjaanAlumni, erro
 		WHERE pa.deleted_at IS NOT NULL
 		ORDER BY pa.deleted_at DESC
 	`
-	
+
 	err := r.db.Raw(query).Scan(&pekerjaans).Error
 	return pekerjaans, err
 }

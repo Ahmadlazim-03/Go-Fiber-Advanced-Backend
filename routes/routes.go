@@ -7,13 +7,13 @@ import (
 	"github.com/gofiber/fiber/v2"
 )
 
-// SetupRoutes mendaftarkan semua endpoint utama aplikasi
 func SetupRoutes(
 	app *fiber.App,
 	mahasiswaService *services.MahasiswaService,
 	alumniService *services.AlumniService,
 	pekerjaanService *services.PekerjaanAlumniService,
 	authService *services.AuthService,
+	trashService *services.TrashService,
 ) {
 	// Global variable untuk status API
 	var isAPIActive = true
@@ -80,21 +80,25 @@ func SetupRoutes(
 
 	// Pekerjaan Alumni routes - User: hanya GET, Admin: semua operasi
 	pekerjaan := api.Group("/pekerjaan")
-	pekerjaan.Get("/count", pekerjaanService.GetPekerjaanAlumniCount)                           // User & Admin
-	pekerjaan.Get("/", pekerjaanService.GetPekerjaanAlumnis)                                    // User & Admin
-	pekerjaan.Get("/my-jobs", pekerjaanService.GetPekerjaanByUser)                              // User untuk melihat pekerjaan sendiri
-	pekerjaan.Get("/deleted", pekerjaanService.GetDeletedPekerjaan)                             // Admin only - melihat data terhapus
-	pekerjaan.Get("/:id", pekerjaanService.GetPekerjaanAlumni)                                  // User & Admin
-	pekerjaan.Get("/alumni/:alumni_id", pekerjaanService.GetPekerjaanByAlumni)                  // User & Admin
-	pekerjaan.Post("/", middleware.RequireAdmin(), pekerjaanService.CreatePekerjaanAlumni)      // Admin only
-	pekerjaan.Put("/:id", middleware.RequireAdmin(), pekerjaanService.UpdatePekerjaanAlumni)    // Admin only
-	pekerjaan.Delete("/:id", middleware.RequireAdmin(), pekerjaanService.DeletePekerjaanAlumni) // Admin only - hard delete
-	
-	// Soft Delete routes untuk pekerjaan alumni
-	pekerjaan.Delete("/soft/:id", pekerjaanService.SoftDeletePekerjaanAlumni)                   // Admin atau Alumni pemilik
-	pekerjaan.Delete("/soft/alumni/:alumni_id", pekerjaanService.SoftDeletePekerjaanByAlumni)   // Admin atau Alumni pemilik
-	pekerjaan.Post("/restore/:id", pekerjaanService.RestorePekerjaanAlumni)                     // Admin only - restore soft deleted
-
-	// Perusahaan routes - public read access
+	pekerjaan.Get("/count", pekerjaanService.GetPekerjaanAlumniCount)
+	pekerjaan.Get("/", pekerjaanService.GetPekerjaanAlumnis)
+	pekerjaan.Get("/my-jobs", pekerjaanService.GetPekerjaanByUser)
+	pekerjaan.Get("/deleted", pekerjaanService.GetDeletedPekerjaan)
+	pekerjaan.Get("/:id", pekerjaanService.GetPekerjaanAlumni)
+	pekerjaan.Get("/alumni/:alumni_id", pekerjaanService.GetPekerjaanByAlumni)
+	pekerjaan.Post("/", middleware.RequireAdmin(), pekerjaanService.CreatePekerjaanAlumni)
+	pekerjaan.Put("/:id", middleware.RequireAdmin(), pekerjaanService.UpdatePekerjaanAlumni)
 	api.Get("/perusahaan/:nama_perusahaan", pekerjaanService.GetAlumniCountByCompany)
+
+
+
+	
+	// Endpoint Soal 1
+	api.Get("/trash", middleware.RequireAdmin(), trashService.GetAllTrash)
+	// Endpoint Soal 2
+	pekerjaan.Delete("/soft/:id", pekerjaanService.SoftDeletePekerjaanAlumni)
+	pekerjaan.Delete("/soft/alumni/:alumni_id", pekerjaanService.SoftDeletePekerjaanByAlumni)
+	pekerjaan.Post("/restore/:id", pekerjaanService.RestorePekerjaanAlumni)
+	// Endpoint Soal 3
+	pekerjaan.Delete("/:id", middleware.RequireAdmin(), pekerjaanService.DeletePekerjaanAlumni)
 }
