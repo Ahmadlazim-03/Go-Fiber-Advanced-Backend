@@ -125,9 +125,31 @@ func (s *PekerjaanAlumniService) UpdatePekerjaanAlumni(c *fiber.Ctx) error {
 }
 
 func (s *PekerjaanAlumniService) DeletePekerjaanAlumni(c *fiber.Ctx) error {
+	userRole, ok := c.Locals("role").(string)
+	if !ok {
+		return c.Status(401).JSON(fiber.Map{"error": "Role tidak ditemukan"})
+	}
+
+	userID, ok := c.Locals("user_id").(int)
+	if !ok {
+		return c.Status(401).JSON(fiber.Map{"error": "User ID tidak ditemukan"})
+	}
+
 	id, err := strconv.ParseUint(c.Params("id"), 10, 32)
 	if err != nil {
 		return c.Status(400).JSON(fiber.Map{"error": "Invalid ID"})
+	}
+
+	// Jika bukan admin, periksa apakah pekerjaan tersebut milik user
+	if userRole != "admin" {
+		pekerjaan, err := s.pekerjaanRepo.GetByID(uint(id))
+		if err != nil {
+			return c.Status(404).JSON(fiber.Map{"error": "Pekerjaan not found"})
+		}
+
+		if pekerjaan.Alumni.UserID != userID {
+			return c.Status(403).JSON(fiber.Map{"error": "Access denied. You can only delete your own job records."})
+		}
 	}
 
 	err = s.pekerjaanRepo.Delete(uint(id))
@@ -229,13 +251,26 @@ func (s *PekerjaanAlumniService) RestorePekerjaanAlumni(c *fiber.Ctx) error {
 		return c.Status(401).JSON(fiber.Map{"error": "Role tidak ditemukan"})
 	}
 
-	if userRole != "admin" {
-		return c.Status(403).JSON(fiber.Map{"error": "Access denied. Only admin can restore data."})
+	userID, ok := c.Locals("user_id").(int)
+	if !ok {
+		return c.Status(401).JSON(fiber.Map{"error": "User ID tidak ditemukan"})
 	}
 
 	id, err := strconv.ParseUint(c.Params("id"), 10, 32)
 	if err != nil {
 		return c.Status(400).JSON(fiber.Map{"error": "Invalid ID"})
+	}
+
+	// Jika bukan admin, periksa apakah pekerjaan tersebut milik user
+	if userRole != "admin" {
+		pekerjaan, err := s.pekerjaanRepo.GetByID(uint(id))
+		if err != nil {
+			return c.Status(404).JSON(fiber.Map{"error": "Pekerjaan not found"})
+		}
+
+		if pekerjaan.Alumni.UserID != userID {
+			return c.Status(403).JSON(fiber.Map{"error": "Access denied. You can only restore your own job records."})
+		}
 	}
 
 	err = s.pekerjaanRepo.Restore(uint(id))

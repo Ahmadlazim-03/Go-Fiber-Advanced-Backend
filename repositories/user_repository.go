@@ -92,14 +92,11 @@ func (r *userRepository) GetWithPagination(pagination *models.PaginationRequest)
 func (r *userRepository) GetByID(id int) (*models.User, error) {
 	var user models.User
 	
-	query := `
-		SELECT id, username, email, password, role, is_active, created_at, updated_at
-		FROM users
-		WHERE id = ?
-	`
-	
-	err := r.db.Raw(query, id).Scan(&user).Error
+	err := r.db.Where("id = ?", id).First(&user).Error
 	if err != nil {
+		if err == gorm.ErrRecordNotFound {
+			return nil, nil // Return nil when no record found
+		}
 		return nil, err
 	}
 	return &user, nil
@@ -108,14 +105,11 @@ func (r *userRepository) GetByID(id int) (*models.User, error) {
 func (r *userRepository) GetByEmail(email string) (*models.User, error) {
 	var user models.User
 	
-	query := `
-		SELECT id, username, email, password, role, is_active, created_at, updated_at
-		FROM users
-		WHERE email = ?
-	`
-	
-	err := r.db.Raw(query, email).Scan(&user).Error
+	err := r.db.Where("email = ?", email).First(&user).Error
 	if err != nil {
+		if err == gorm.ErrRecordNotFound {
+			return nil, nil // Return nil when no record found
+		}
 		return nil, err
 	}
 	return &user, nil
@@ -124,14 +118,11 @@ func (r *userRepository) GetByEmail(email string) (*models.User, error) {
 func (r *userRepository) GetByUsername(username string) (*models.User, error) {
 	var user models.User
 	
-	query := `
-		SELECT id, username, email, password, role, is_active, created_at, updated_at
-		FROM users
-		WHERE username = ?
-	`
-	
-	err := r.db.Raw(query, username).Scan(&user).Error
+	err := r.db.Where("username = ?", username).First(&user).Error
 	if err != nil {
+		if err == gorm.ErrRecordNotFound {
+			return nil, nil // Return nil when no record found
+		}
 		return nil, err
 	}
 	return &user, nil

@@ -1,6 +1,7 @@
 package services
 
 import (
+	"modul4crud/models"
 	"modul4crud/repositories"
 
 	"github.com/gofiber/fiber/v2"
@@ -17,18 +18,43 @@ func NewTrashService(pekerjaanRepo repositories.PekerjaanAlumniRepository) *Tras
 }
 
 func (s *TrashService) GetAllTrash(c *fiber.Ctx) error {
-	pekerjaanAlumnis, err := s.pekerjaanRepo.GetDeleted()
+	userRole, ok := c.Locals("role").(string)
+	if !ok {
+		return c.Status(401).JSON(fiber.Map{"error": "Role tidak ditemukan"})
+	}
+
+	var pekerjaanAlumnis []models.PekerjaanAlumni
+	var err error
+
+	if userRole == "admin" {
+		// Admin dapat melihat semua data trash
+		pekerjaanAlumnis, err = s.pekerjaanRepo.GetDeleted()
+	} else {
+		// User hanya dapat melihat data trash milik sendiri
+		userID, ok := c.Locals("user_id").(int)
+		if !ok {
+			return c.Status(401).JSON(fiber.Map{"error": "User ID tidak ditemukan"})
+		}
+		pekerjaanAlumnis, err = s.pekerjaanRepo.GetDeletedByUserID(userID)
+	}
+
 	if err != nil {
 		return c.Status(500).JSON(fiber.Map{
 			"error": "Failed to fetch deleted pekerjaan alumni data",
 		})
 	}
+
+	message := "Data trash berhasil diambil"
+	if userRole != "admin" {
+		message = "Data trash milik Anda berhasil diambil"
+	}
+
 	response := fiber.Map{
-		"message": "Data trash berhasil diambil",
+		"message": message,
 		"data": fiber.Map{
 			"pekerjaan_alumni": pekerjaanAlumnis,
 		},
-		"summary": fiber.Map{
+		"jumlah data pekerjaan yang di soft": fiber.Map{
 			"total_pekerjaan_alumni": len(pekerjaanAlumnis),
 		},
 	}

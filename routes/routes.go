@@ -89,16 +89,20 @@ func SetupRoutes(
 	pekerjaan.Post("/", middleware.RequireAdmin(), pekerjaanService.CreatePekerjaanAlumni)
 	pekerjaan.Put("/:id", middleware.RequireAdmin(), pekerjaanService.UpdatePekerjaanAlumni)
 	api.Get("/perusahaan/:nama_perusahaan", pekerjaanService.GetAlumniCountByCompany)
+	pekerjaan.Delete("/soft/alumni/:alumni_id", pekerjaanService.SoftDeletePekerjaanByAlumni)
+
+
+
+
 
 
 
 	
-	// Endpoint Soal 1
-	api.Get("/trash", middleware.RequireAdmin(), trashService.GetAllTrash)
-	// Endpoint Soal 2
+	// Endpoint Soal 1 - Trash endpoint: semua user bisa akses, tapi user hanya lihat milik sendiri
+	api.Get("/trash", trashService.GetAllTrash)
+	// Endpoint Soal 2 - Soft delete & restore: user bisa untuk data sendiri, admin untuk semua
 	pekerjaan.Delete("/soft/:id", pekerjaanService.SoftDeletePekerjaanAlumni)
-	pekerjaan.Delete("/soft/alumni/:alumni_id", pekerjaanService.SoftDeletePekerjaanByAlumni)
 	pekerjaan.Post("/restore/:id", pekerjaanService.RestorePekerjaanAlumni)
-	// Endpoint Soal 3
-	pekerjaan.Delete("/:id", middleware.RequireAdmin(), pekerjaanService.DeletePekerjaanAlumni)
+	// Endpoint Soal 3 - Hard delete: user bisa untuk data sendiri, admin untuk semua
+	pekerjaan.Delete("/:id", pekerjaanService.DeletePekerjaanAlumni)
 }

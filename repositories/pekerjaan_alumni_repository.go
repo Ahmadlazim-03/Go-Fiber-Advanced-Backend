@@ -21,6 +21,7 @@ type PekerjaanAlumniRepository interface {
 	SoftDeleteByAlumniID(alumniID uint) error
 	Restore(id uint) error
 	GetDeleted() ([]models.PekerjaanAlumni, error)
+	GetDeletedByUserID(userID int) ([]models.PekerjaanAlumni, error)
 	Count() (int64, error)
 	GetAlumniCountByCompany(namaPerusahaan string) (int64, error)
 }
@@ -283,7 +284,6 @@ func (r *pekerjaanAlumniRepository) Update(pekerjaan *models.PekerjaanAlumni) er
 }
 
 func (r *pekerjaanAlumniRepository) Delete(id uint) error {
-	// Cek apakah data sudah soft deleted
 	var deletedAt *time.Time
 	checkQuery := `SELECT deleted_at FROM pekerjaan_alumnis WHERE id = ?`
 	err := r.db.Raw(checkQuery, id).Scan(&deletedAt).Error
@@ -291,7 +291,6 @@ func (r *pekerjaanAlumniRepository) Delete(id uint) error {
 		return fmt.Errorf("data pekerjaan alumni tidak ditemukan")
 	}
 
-	// Hanya bisa hard delete jika sudah soft deleted
 	if deletedAt == nil {
 		return fmt.Errorf("tidak bisa hard delete: data belum di-soft delete terlebih dahulu")
 	}
@@ -342,28 +341,36 @@ func (r *pekerjaanAlumniRepository) GetDeleted() ([]models.PekerjaanAlumni, erro
 
 	query := `
 		SELECT 
-			pa.id, pa.alumni_id, pa.nama_perusahaan, pa.posisi_jabatan, 
-			pa.bidang_industri, pa.lokasi_kerja, pa.gaji_range, 
-			pa.tanggal_mulai_kerja, pa.tanggal_selesai_kerja, 
-			pa.status_pekerjaan, pa.deskripsi_pekerjaan, 
-			pa.created_at, pa.updated_at, pa.deleted_at,
-			a.id as "Alumni__id", a.user_id as "Alumni__user_id", 
-			a.nim as "Alumni__nim", a.nama as "Alumni__nama", 
-			a.jurusan as "Alumni__jurusan", a.angkatan as "Alumni__angkatan", 
-			a.tahun_lulus as "Alumni__tahun_lulus", a.no_telepon as "Alumni__no_telepon", 
-			a.alamat as "Alumni__alamat", a.created_at as "Alumni__created_at", 
-			a.updated_at as "Alumni__updated_at",
-			u.id as "Alumni__User__id", u.username as "Alumni__User__username", 
-			u.email as "Alumni__User__email", u.role as "Alumni__User__role", 
-			u.is_active as "Alumni__User__is_active", u.created_at as "Alumni__User__created_at", 
-			u.updated_at as "Alumni__User__updated_at"
-		FROM pekerjaan_alumnis pa
-		LEFT JOIN alumnis a ON pa.alumni_id = a.id
-		LEFT JOIN users u ON a.user_id = u.id
-		WHERE pa.deleted_at IS NOT NULL
-		ORDER BY pa.deleted_at DESC
+			pekerjaan_alumnis.*, 
+			alumnis.*, 
+			users.*
+		FROM pekerjaan_alumnis
+		LEFT JOIN alumnis ON pekerjaan_alumnis.alumni_id = alumnis.id
+		LEFT JOIN users ON alumnis.user_id = users.id
+		WHERE pekerjaan_alumnis.deleted_at IS NOT NULL
+		ORDER BY pekerjaan_alumnis.deleted_at DESC;
 	`
 
 	err := r.db.Raw(query).Scan(&pekerjaans).Error
+	return pekerjaans, err
+}
+
+func (r *pekerjaanAlumniRepository) GetDeletedByUserID(userID int) ([]models.PekerjaanAlumni, error) {
+	var pekerjaans []models.PekerjaanAlumni
+
+	query := `
+		SELECT 
+			pekerjaan_alumnis.*, 
+			alumnis.*, 
+			users.*
+		FROM pekerjaan_alumnis
+		LEFT JOIN alumnis ON pekerjaan_alumnis.alumni_id = alumnis.id
+		LEFT JOIN users ON alumnis.user_id = users.id
+		WHERE pekerjaan_alumnis.deleted_at IS NOT NULL 
+		AND alumnis.user_id = ?
+		ORDER BY pekerjaan_alumnis.deleted_at DESC;
+	`
+
+	err := r.db.Raw(query, userID).Scan(&pekerjaans).Error
 	return pekerjaans, err
 }
