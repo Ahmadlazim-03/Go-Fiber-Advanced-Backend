@@ -95,14 +95,13 @@ func SetupRoutes(
 
 
 
-
-
 	
-	// Endpoint Soal 1 - Trash endpoint: semua user bisa akses, tapi user hanya lihat milik sendiri
+
+	// Endpoint Soal 1
 	api.Get("/trash", trashService.GetAllTrash)
-	// Endpoint Soal 2 - Soft delete & restore: user bisa untuk data sendiri, admin untuk semua
+	// Endpoint Soal 2 
 	pekerjaan.Delete("/soft/:id", pekerjaanService.SoftDeletePekerjaanAlumni)
 	pekerjaan.Post("/restore/:id", pekerjaanService.RestorePekerjaanAlumni)
-	// Endpoint Soal 3 - Hard delete: user bisa untuk data sendiri, admin untuk semua
+	// Endpoint Soal 3
 	pekerjaan.Delete("/:id", pekerjaanService.DeletePekerjaanAlumni)
 }

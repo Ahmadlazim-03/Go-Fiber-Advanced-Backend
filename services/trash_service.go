@@ -27,10 +27,8 @@ func (s *TrashService) GetAllTrash(c *fiber.Ctx) error {
 	var err error
 
 	if userRole == "admin" {
-		// Admin dapat melihat semua data trash
 		pekerjaanAlumnis, err = s.pekerjaanRepo.GetDeleted()
 	} else {
-		// User hanya dapat melihat data trash milik sendiri
 		userID, ok := c.Locals("user_id").(int)
 		if !ok {
 			return c.Status(401).JSON(fiber.Map{"error": "User ID tidak ditemukan"})

@@ -140,7 +140,6 @@ func (s *PekerjaanAlumniService) DeletePekerjaanAlumni(c *fiber.Ctx) error {
 		return c.Status(400).JSON(fiber.Map{"error": "Invalid ID"})
 	}
 
-	// Jika bukan admin, periksa apakah pekerjaan tersebut milik user
 	if userRole != "admin" {
 		pekerjaan, err := s.pekerjaanRepo.GetByID(uint(id))
 		if err != nil {
@@ -261,7 +260,6 @@ func (s *PekerjaanAlumniService) RestorePekerjaanAlumni(c *fiber.Ctx) error {
 		return c.Status(400).JSON(fiber.Map{"error": "Invalid ID"})
 	}
 
-	// Jika bukan admin, periksa apakah pekerjaan tersebut milik user
 	if userRole != "admin" {
 		pekerjaan, err := s.pekerjaanRepo.GetByID(uint(id))
 		if err != nil {
