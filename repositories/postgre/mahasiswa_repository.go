@@ -1,27 +1,18 @@
-package repositories
+package postgre
 
 import (
 	"fmt"
 	"modul4crud/models"
+	repo "modul4crud/repositories/interface"
 
 	"gorm.io/gorm"
 )
-
-type MahasiswaRepository interface {
-	GetAll() ([]models.Mahasiswa, error)
-	GetWithPagination(pagination *models.PaginationRequest) ([]models.Mahasiswa, int64, error)
-	GetByID(id uint) (*models.Mahasiswa, error)
-	Create(mahasiswa *models.Mahasiswa) error
-	Update(mahasiswa *models.Mahasiswa) error
-	Delete(id uint) error
-	Count() (int64, error)
-}
 
 type mahasiswaRepository struct {
 	db *gorm.DB
 }
 
-func NewMahasiswaRepository(db *gorm.DB) MahasiswaRepository {
+func NewMahasiswaRepository(db *gorm.DB) repo.MahasiswaRepository {
 	return &mahasiswaRepository{db: db}
 }
 

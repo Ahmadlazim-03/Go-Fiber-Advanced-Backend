@@ -2,16 +2,16 @@ package services
 
 import (
 	"modul4crud/models"
-	"modul4crud/repositories"
+	repo "modul4crud/repositories/interface"
 
 	"github.com/gofiber/fiber/v2"
 )
 
 type TrashService struct {
-	pekerjaanRepo repositories.PekerjaanAlumniRepository
+	pekerjaanRepo repo.PekerjaanAlumniRepository
 }
 
-func NewTrashService(pekerjaanRepo repositories.PekerjaanAlumniRepository) *TrashService {
+func NewTrashService(pekerjaanRepo repo.PekerjaanAlumniRepository) *TrashService {
 	return &TrashService{
 		pekerjaanRepo: pekerjaanRepo,
 	}

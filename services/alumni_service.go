@@ -2,17 +2,17 @@ package services
 
 import (
 	"modul4crud/models"
-	"modul4crud/repositories"
+	repo "modul4crud/repositories/interface"
 	"strconv"
 
 	"github.com/gofiber/fiber/v2"
 )
 
 type AlumniService struct {
-	alumniRepo repositories.AlumniRepository
+	alumniRepo repo.AlumniRepository
 }
 
-func NewAlumniService(alumniRepo repositories.AlumniRepository) *AlumniService {
+func NewAlumniService(alumniRepo repo.AlumniRepository) *AlumniService {
 	return &AlumniService{
 		alumniRepo: alumniRepo,
 	}

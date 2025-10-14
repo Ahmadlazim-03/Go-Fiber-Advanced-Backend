@@ -1,28 +1,18 @@
-package repositories
+package postgre
 
 import (
 	"fmt"
 	"modul4crud/models"
+	repo "modul4crud/repositories/interface"
 
 	"gorm.io/gorm"
 )
-
-type AlumniRepository interface {
-	GetAll() ([]models.Alumni, error)
-	GetWithPagination(pagination *models.PaginationRequest) ([]models.Alumni, int64, error)
-	GetByID(id uint) (*models.Alumni, error)
-	GetByUserID(userID int) (*models.Alumni, error)
-	Create(alumni *models.Alumni) error
-	Update(alumni *models.Alumni) error
-	Delete(id uint) error
-	Count() (int64, error)
-}
 
 type alumniRepository struct {
 	db *gorm.DB
 }
 
-func NewAlumniRepository(db *gorm.DB) AlumniRepository {
+func NewAlumniRepository(db *gorm.DB) repo.AlumniRepository {
 	return &alumniRepository{db: db}
 }
 

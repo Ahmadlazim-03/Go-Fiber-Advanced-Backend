@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"modul4crud/middleware"
 	"modul4crud/models"
-	"modul4crud/repositories"
+	repo "modul4crud/repositories/interface"
 	"modul4crud/utils"
 	"strconv"
 
@@ -12,10 +12,10 @@ import (
 )
 
 type AuthService struct {
-	userRepo repositories.UserRepository
+	userRepo repo.UserRepository
 }
 
-func NewAuthService(userRepo repositories.UserRepository) *AuthService {
+func NewAuthService(userRepo repo.UserRepository) *AuthService {
 	return &AuthService{
 		userRepo: userRepo,
 	}

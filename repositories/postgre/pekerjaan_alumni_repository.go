@@ -1,36 +1,19 @@
-package repositories
+package postgre
 
 import (
 	"fmt"
 	"modul4crud/models"
+	repo "modul4crud/repositories/interface"
 	"time"
 
 	"gorm.io/gorm"
 )
 
-type PekerjaanAlumniRepository interface {
-	GetAll() ([]models.PekerjaanAlumni, error)
-	GetWithPagination(pagination *models.PaginationRequest) ([]models.PekerjaanAlumni, int64, error)
-	GetByID(id uint) (*models.PekerjaanAlumni, error)
-	GetByAlumniID(alumniID uint) ([]models.PekerjaanAlumni, error)
-	GetByUserID(userID int) ([]models.PekerjaanAlumni, error)
-	Create(pekerjaan *models.PekerjaanAlumni) error
-	Update(pekerjaan *models.PekerjaanAlumni) error
-	Delete(id uint) error
-	SoftDelete(id uint) error
-	SoftDeleteByAlumniID(alumniID uint) error
-	Restore(id uint) error
-	GetDeleted() ([]models.PekerjaanAlumni, error)
-	GetDeletedByUserID(userID int) ([]models.PekerjaanAlumni, error)
-	Count() (int64, error)
-	GetAlumniCountByCompany(namaPerusahaan string) (int64, error)
-}
-
 type pekerjaanAlumniRepository struct {
 	db *gorm.DB
 }
 
-func NewPekerjaanAlumniRepository(db *gorm.DB) PekerjaanAlumniRepository {
+func NewPekerjaanAlumniRepository(db *gorm.DB) repo.PekerjaanAlumniRepository {
 	return &pekerjaanAlumniRepository{db: db}
 }
 

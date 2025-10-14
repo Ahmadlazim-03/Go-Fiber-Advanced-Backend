@@ -108,18 +108,3 @@ func createIndexes() {
 
 	log.Println("Database indexes creation completed!")
 }
-
-// CheckDatabaseConnection memastikan koneksi database berfungsi
-func CheckDatabaseConnection() error {
-	sqlDB, err := DB.DB()
-	if err != nil {
-		return err
-	}
-
-	if err := sqlDB.Ping(); err != nil {
-		return err
-	}
-
-	log.Println("✓ Database connection is healthy")
-	return nil
-}

@@ -4,7 +4,9 @@ import (
 	"log"
 	"modul4crud/database"
 	"modul4crud/models"
-	"modul4crud/repositories"
+	repo "modul4crud/repositories/interface"
+	"modul4crud/repositories/mongodb"
+	"modul4crud/repositories/postgre"
 	"modul4crud/routes"
 	"modul4crud/services"
 	"modul4crud/utils"
@@ -13,20 +15,17 @@ import (
 )
 
 // createDefaultAdmin membuat user admin default jika belum ada
-func createDefaultAdmin() {
+func createDefaultAdmin(userRepo repo.UserRepository) {
 	log.Println("Checking for default admin user...")
 
-	// Check if admin user exists using raw SQL
-	var count int64
-	checkQuery := `SELECT COUNT(*) FROM users WHERE email = ?`
-	err := database.DB.Raw(checkQuery, "admin@example.com").Scan(&count).Error
-
+	// Check if admin user exists
+	existingUser, err := userRepo.GetByEmail("admin@example.com")
 	if err != nil {
 		log.Printf("Error checking admin user: %v", err)
 		return
 	}
 
-	if count == 0 {
+	if existingUser == nil {
 		// Hash password admin123
 		hashedPassword, err := utils.HashPassword("admin123")
 		if err != nil {
@@ -35,14 +34,17 @@ func createDefaultAdmin() {
 		}
 
 		// Admin user belum ada, buat yang baru
-		insertQuery := `
-			INSERT INTO users (username, email, password, role, is_active, created_at, updated_at)
-			VALUES (?, ?, ?, ?, ?, NOW(), NOW())
-		`
+		adminUser := &models.User{
+			Username: "admin",
+			Email:    "admin@example.com",
+			Password: hashedPassword,
+			Role:     "admin",
+			IsActive: true,
+		}
 
-		result := database.DB.Exec(insertQuery, "admin", "admin@example.com", hashedPassword, "admin", true)
-		if result.Error != nil {
-			log.Printf("Warning: Could not create default admin user: %v", result.Error)
+		err = userRepo.Create(adminUser)
+		if err != nil {
+			log.Printf("Warning: Could not create default admin user: %v", err)
 		} else {
 			log.Println("✓ Default admin user created: admin@example.com / admin123")
 		}
@@ -100,17 +102,31 @@ func main() {
 		log.Fatalf("Database connection failed: %v", err)
 	}
 
-	// Run database migrations (only creates tables if they don't exist)
-	database.RunMigrations()
+	// Run database migrations (only for PostgreSQL)
+	if database.IsPostgres() {
+		database.RunMigrations()
+	}
+
+	// Initialize repositories based on database type
+	var userRepo repo.UserRepository
+	var mahasiswaRepo repo.MahasiswaRepository
+	var alumniRepo repo.AlumniRepository
+	var pekerjaanRepo repo.PekerjaanAlumniRepository
+
+	if database.IsPostgres() {
+		userRepo = postgre.NewUserRepository(database.DB)
+		mahasiswaRepo = postgre.NewMahasiswaRepository(database.DB)
+		alumniRepo = postgre.NewAlumniRepository(database.DB)
+		pekerjaanRepo = postgre.NewPekerjaanAlumniRepository(database.DB)
+	} else if database.IsMongoDB() {
+		userRepo = mongodb.NewUserRepositoryMongo(database.MongoDB)
+		mahasiswaRepo = mongodb.NewMahasiswaRepositoryMongo(database.MongoDB)
+		alumniRepo = mongodb.NewAlumniRepositoryMongo(database.MongoDB)
+		pekerjaanRepo = mongodb.NewPekerjaanAlumniRepositoryMongo(database.MongoDB)
+	}
 
 	// Create default admin user
-	createDefaultAdmin()
-
-	// Initialize repositories
-	userRepo := repositories.NewUserRepository(database.DB)
-	mahasiswaRepo := repositories.NewMahasiswaRepository(database.DB)
-	alumniRepo := repositories.NewAlumniRepository(database.DB)
-	pekerjaanRepo := repositories.NewPekerjaanAlumniRepository(database.DB)
+	createDefaultAdmin(userRepo)
 
 	// Initialize services - all with direct repository access
 	authService := services.NewAuthService(userRepo)

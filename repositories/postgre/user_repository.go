@@ -1,29 +1,18 @@
-package repositories
+package postgre
 
 import (
 	"fmt"
 	"modul4crud/models"
+	repo "modul4crud/repositories/interface"
 
 	"gorm.io/gorm"
 )
-
-type UserRepository interface {
-	GetAll() ([]models.User, error)
-	GetWithPagination(pagination *models.PaginationRequest) ([]models.User, int64, error)
-	GetByID(id int) (*models.User, error)
-	GetByEmail(email string) (*models.User, error)
-	GetByUsername(username string) (*models.User, error)
-	Create(user *models.User) error
-	Update(user *models.User) error
-	Delete(id int) error
-	Count() (int64, error)
-}
 
 type userRepository struct {
 	db *gorm.DB
 }
 
-func NewUserRepository(db *gorm.DB) UserRepository {
+func NewUserRepository(db *gorm.DB) repo.UserRepository {
 	return &userRepository{db: db}
 }
 
