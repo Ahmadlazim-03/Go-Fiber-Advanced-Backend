@@ -8,6 +8,7 @@ import (
 	"time"
 
 	"github.com/joho/godotenv"
+	"github.com/pocketbase/pocketbase"
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
 	"gorm.io/driver/postgres"
@@ -15,10 +16,13 @@ import (
 )
 
 var (
-	DB          *gorm.DB
-	MongoDB     *mongo.Database
-	MongoClient *mongo.Client
-	DBType      string
+	DB             *gorm.DB
+	MongoDB        *mongo.Database
+	MongoClient    *mongo.Client
+	PocketBaseApp  *pocketbase.PocketBase
+	PocketBaseURL  string
+	PocketBaseAuth string // Token untuk auth
+	DBType         string
 )
 
 func ConnectDB() {
@@ -37,8 +41,10 @@ func ConnectDB() {
 		connectPostgres()
 	case "mongodb":
 		connectMongoDB()
+	case "pocketbase":
+		connectPocketBase()
 	default:
-		log.Fatalf("Unknown database type: %s. Use 'postgres' or 'mongodb'", DBType)
+		log.Fatalf("Unknown database type: %s. Use 'postgres', 'mongodb', or 'pocketbase'", DBType)
 	}
 }
 
@@ -68,16 +74,28 @@ func connectMongoDB() {
 		dbName = "railway" // Default database name
 	}
 
-	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	log.Printf("Connecting to MongoDB at: %s", uri)
+	log.Printf("Database name: %s", dbName)
+
+	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
 	defer cancel()
 
-	clientOptions := options.Client().ApplyURI(uri)
+	// Configure client options with better settings for Railway
+	clientOptions := options.Client().
+		ApplyURI(uri).
+		SetConnectTimeout(30 * time.Second).
+		SetServerSelectionTimeout(30 * time.Second).
+		SetSocketTimeout(30 * time.Second).
+		SetMaxPoolSize(50).
+		SetMinPoolSize(10)
+
 	client, err := mongo.Connect(ctx, clientOptions)
 	if err != nil {
 		log.Fatal("Failed to connect to MongoDB:", err)
 	}
 
 	// Ping the database to verify connection
+	log.Println("Pinging MongoDB to verify connection...")
 	err = client.Ping(ctx, nil)
 	if err != nil {
 		log.Fatal("Failed to ping MongoDB:", err)
@@ -86,6 +104,19 @@ func connectMongoDB() {
 	MongoClient = client
 	MongoDB = client.Database(dbName)
 	log.Printf("✓ Connected to MongoDB successfully (Database: %s)\n", dbName)
+}
+
+func connectPocketBase() {
+	url := os.Getenv("POCKETBASE_URL")
+	if url == "" {
+		log.Fatal("POCKETBASE_URL environment variable is not set")
+	}
+
+	PocketBaseURL = url
+	
+	log.Printf("Connecting to PocketBase at: %s", url)
+	log.Println("✓ PocketBase URL configured successfully")
+	log.Println("Note: PocketBase uses HTTP API - no persistent connection needed")
 }
 
 func DisconnectMongoDB() error {
@@ -109,6 +140,10 @@ func IsPostgres() bool {
 	return DBType == "postgres"
 }
 
+func IsPocketBase() bool {
+	return DBType == "pocketbase"
+}
+
 func CheckDatabaseConnection() error {
 	if IsPostgres() && DB != nil {
 		sqlDB, err := DB.DB()
@@ -120,6 +155,10 @@ func CheckDatabaseConnection() error {
 		ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 		defer cancel()
 		return MongoClient.Ping(ctx, nil)
+	} else if IsPocketBase() && PocketBaseURL != "" {
+		// PocketBase menggunakan HTTP API, tidak ada koneksi persistent
+		log.Println("PocketBase uses HTTP API - connection check skipped")
+		return nil
 	}
 	return fmt.Errorf("no database connection available")
 }

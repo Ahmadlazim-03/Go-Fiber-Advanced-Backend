@@ -111,7 +111,7 @@ func (s *AuthService) Login(c *fiber.Ctx) error {
 
 	// Cari user berdasarkan email
 	user, err := s.userRepo.GetByEmail(req.Email)
-	if err != nil {
+	if err != nil || user == nil {
 		fmt.Printf("LOGIN DEBUG - User tidak ditemukan untuk email: %s, Error: %v\n", req.Email, err)
 		return c.Status(401).JSON(fiber.Map{
 			"error": "Email atau password salah",

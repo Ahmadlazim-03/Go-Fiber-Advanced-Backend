@@ -3,10 +3,12 @@ package main
 import (
 	"log"
 	"modul4crud/database"
+	"modul4crud/database/migration"
 	"modul4crud/models"
 	repo "modul4crud/repositories/interface"
 	"modul4crud/repositories/mongodb"
-	"modul4crud/repositories/postgre"
+	"modul4crud/repositories/pocketbase"
+	"modul4crud/repositories/postgres"
 	"modul4crud/routes"
 	"modul4crud/services"
 	"modul4crud/utils"
@@ -102,10 +104,8 @@ func main() {
 		log.Fatalf("Database connection failed: %v", err)
 	}
 
-	// Run database migrations (only for PostgreSQL)
-	if database.IsPostgres() {
-		database.RunMigrations()
-	}
+	// Run database migrations
+	migration.RunMigrations()
 
 	// Initialize repositories based on database type
 	var userRepo repo.UserRepository
@@ -123,6 +123,12 @@ func main() {
 		mahasiswaRepo = mongodb.NewMahasiswaRepositoryMongo(database.MongoDB)
 		alumniRepo = mongodb.NewAlumniRepositoryMongo(database.MongoDB)
 		pekerjaanRepo = mongodb.NewPekerjaanAlumniRepositoryMongo(database.MongoDB)
+	} else if database.IsPocketBase() {
+		userRepo = pocketbase.NewUserRepository(database.PocketBaseURL)
+		mahasiswaRepo = pocketbase.NewMahasiswaRepository(database.PocketBaseURL)
+		alumniRepo = pocketbase.NewAlumniRepository(database.PocketBaseURL)
+		pekerjaanRepo = pocketbase.NewPekerjaanAlumniRepository(database.PocketBaseURL)
+		log.Println("✓ All PocketBase repositories initialized successfully")
 	}
 
 	// Create default admin user
