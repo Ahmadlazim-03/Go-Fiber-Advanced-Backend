@@ -13,6 +13,9 @@ type UserRepository interface {
 	Update(user *models.User) error
 	Delete(id int) error
 	Count() (int64, error)
+	// AuthenticateWithPassword verifies credentials (PocketBase specific)
+	// For PostgreSQL/MongoDB, this returns error since they use bcrypt
+	AuthenticateWithPassword(email, password string) (*models.User, error)
 }
 
 // MahasiswaRepository interface untuk operasi mahasiswa

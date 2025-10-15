@@ -13,10 +13,10 @@ $loginData = @{
 } | ConvertTo-Json
 
 try {
-    $loginResponse = Invoke-RestMethod -Uri "$baseUrl/api/login" -Method POST -ContentType "application/json" -Body $loginData
-    $token = $loginResponse.token
+    $loginResponse = Invoke-RestMethod -Uri "$baseUrl/auth/login" -Method POST -ContentType "application/json" -Body $loginData
+    $token = $loginResponse.data.token
     Write-Host "Success! Token received" -ForegroundColor Yellow
-    Write-Host "User: $($loginResponse.user.email) (Role: $($loginResponse.user.role))`n" -ForegroundColor Cyan
+    Write-Host "User: $($loginResponse.data.user.email) (Role: $($loginResponse.data.user.role))`n" -ForegroundColor Cyan
 } catch {
     Write-Host "Login failed: $($_.Exception.Message)" -ForegroundColor Red
     Write-Host "Error details: $($_.ErrorDetails.Message)" -ForegroundColor Red

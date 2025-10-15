@@ -221,6 +221,12 @@ func (r *userRepositoryMongo) Count() (int64, error) {
 	return r.collection.CountDocuments(ctx, bson.M{})
 }
 
+// AuthenticateWithPassword is not supported for MongoDB
+// MongoDB uses bcrypt password verification, not API authentication
+func (r *userRepositoryMongo) AuthenticateWithPassword(email, password string) (*models.User, error) {
+	return nil, fmt.Errorf("AuthenticateWithPassword not supported for MongoDB - use GetByEmail + bcrypt verification")
+}
+
 // Helper function to get next sequence ID
 func (r *userRepositoryMongo) getNextSequenceID() (int, error) {
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)

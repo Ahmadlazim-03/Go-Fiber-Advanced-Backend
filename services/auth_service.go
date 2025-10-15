@@ -6,6 +6,7 @@ import (
 	"modul4crud/models"
 	repo "modul4crud/repositories/interface"
 	"modul4crud/utils"
+	"os"
 	"strconv"
 
 	"github.com/gofiber/fiber/v2"
@@ -109,33 +110,51 @@ func (s *AuthService) Login(c *fiber.Ctx) error {
 		})
 	}
 
-	// Cari user berdasarkan email
-	user, err := s.userRepo.GetByEmail(req.Email)
-	if err != nil || user == nil {
-		fmt.Printf("LOGIN DEBUG - User tidak ditemukan untuk email: %s, Error: %v\n", req.Email, err)
-		return c.Status(401).JSON(fiber.Map{
-			"error": "Email atau password salah",
-		})
+	// Check if using PocketBase - use auth API directly
+	dbType := os.Getenv("DB_TYPE")
+	var user *models.User
+	var err error
+
+	if dbType == "pocketbase" {
+		fmt.Println("LOGIN DEBUG - Using PocketBase authentication")
+		// Use PocketBase auth API to verify credentials
+		user, err = s.userRepo.AuthenticateWithPassword(req.Email, req.Password)
+		if err != nil {
+			fmt.Printf("LOGIN DEBUG - PocketBase auth failed: %v\n", err)
+			return c.Status(401).JSON(fiber.Map{
+				"error": "Email atau password salah",
+			})
+		}
+	} else {
+		fmt.Println("LOGIN DEBUG - Using PostgreSQL/MongoDB authentication")
+		// For PostgreSQL/MongoDB: Get user and verify password with bcrypt
+		user, err = s.userRepo.GetByEmail(req.Email)
+		if err != nil || user == nil {
+			fmt.Printf("LOGIN DEBUG - User tidak ditemukan untuk email: %s, Error: %v\n", req.Email, err)
+			return c.Status(401).JSON(fiber.Map{
+				"error": "Email atau password salah",
+			})
+		}
+
+		// Verify password with bcrypt
+		passwordValid := utils.CheckPassword(req.Password, user.Password)
+		fmt.Printf("LOGIN DEBUG - Password valid: %v\n", passwordValid)
+		
+		if !passwordValid {
+			fmt.Println("LOGIN DEBUG - Password tidak cocok")
+			return c.Status(401).JSON(fiber.Map{
+				"error": "Email atau password salah",
+			})
+		}
 	}
 
 	fmt.Printf("LOGIN DEBUG - User ditemukan: %+v\n", user)
 
-	// Cek apakah user aktif
-	if !user.IsActive {
+	// Cek apakah user aktif (only for non-PocketBase since PocketBase auth already checks this)
+	if dbType != "pocketbase" && !user.IsActive {
 		fmt.Println("LOGIN DEBUG - User tidak aktif")
 		return c.Status(401).JSON(fiber.Map{
 			"error": "Akun tidak aktif",
-		})
-	}
-
-	// Verify password
-	passwordValid := utils.CheckPassword(req.Password, user.Password)
-	fmt.Printf("LOGIN DEBUG - Password valid: %v\n", passwordValid)
-	
-	if !passwordValid {
-		fmt.Println("LOGIN DEBUG - Password tidak cocok")
-		return c.Status(401).JSON(fiber.Map{
-			"error": "Email atau password salah",
 		})
 	}
 

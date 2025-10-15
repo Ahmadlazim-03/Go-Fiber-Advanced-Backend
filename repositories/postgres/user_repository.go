@@ -164,3 +164,9 @@ func (r *userRepository) Count() (int64, error) {
 	err := r.db.Raw(query).Scan(&count).Error
 	return count, err
 }
+
+// AuthenticateWithPassword is not supported for PostgreSQL
+// PostgreSQL uses bcrypt password verification, not API authentication
+func (r *userRepository) AuthenticateWithPassword(email, password string) (*models.User, error) {
+	return nil, fmt.Errorf("AuthenticateWithPassword not supported for PostgreSQL - use GetByEmail + bcrypt verification")
+}

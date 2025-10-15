@@ -132,12 +132,15 @@ func createOrUpdateCollection(token string, collection PBCollection) error {
 	if collectionExists {
 		method = "PATCH"
 		endpoint = url + "/" + collection.Name
-		log.Printf("Updating collection: %s...", collection.Name)
+		log.Printf("Updating collection: %s with schema fields: %d", collection.Name, len(collection.Schema))
 	} else {
 		method = "POST"
 		endpoint = url
-		log.Printf("Creating collection: %s...", collection.Name)
+		log.Printf("Creating collection: %s with schema fields: %d", collection.Name, len(collection.Schema))
 	}
+	
+	// Debug: print the schema being sent
+	log.Printf("Schema payload: %s", string(jsonData))
 
 	req, _ = http.NewRequest(method, endpoint, bytes.NewBuffer(jsonData))
 	req.Header.Set("Content-Type", "application/json")
@@ -149,12 +152,13 @@ func createOrUpdateCollection(token string, collection PBCollection) error {
 	}
 	defer resp.Body.Close()
 
+	body, _ := io.ReadAll(resp.Body)
+	
 	if resp.StatusCode != http.StatusOK && resp.StatusCode != http.StatusCreated {
-		body, _ := io.ReadAll(resp.Body)
 		return fmt.Errorf("failed (status %d): %s", resp.StatusCode, string(body))
 	}
 
-	log.Printf("✓ Collection %s ready", collection.Name)
+	log.Printf("✓ Collection %s ready - Response: %s", collection.Name, string(body))
 	return nil
 }
 
