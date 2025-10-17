@@ -161,3 +161,63 @@ func (s *AlumniService) GetAlumniByUser(c *fiber.Ctx) error {
 
 	return c.JSON(alumni)
 }
+
+// GetAlumniStatsByYear - Get alumni statistics grouped by graduation year
+func (s *AlumniService) GetAlumniStatsByYear(c *fiber.Ctx) error {
+	alumnis, err := s.alumniRepo.GetAll()
+	if err != nil {
+		return c.Status(500).JSON(fiber.Map{"error": err.Error()})
+	}
+
+	// Group by tahun_lulus
+	stats := make(map[int]int)
+	for _, alumni := range alumnis {
+		stats[alumni.TahunLulus]++
+	}
+
+	// Convert to array for response
+	type YearStat struct {
+		Year  int `json:"year"`
+		Count int `json:"count"`
+	}
+	
+	result := []YearStat{}
+	for year, count := range stats {
+		result = append(result, YearStat{Year: year, Count: count})
+	}
+
+	return c.JSON(fiber.Map{
+		"data": result,
+		"total": len(alumnis),
+	})
+}
+
+// GetAlumniStatsByJurusan - Get alumni statistics grouped by jurusan
+func (s *AlumniService) GetAlumniStatsByJurusan(c *fiber.Ctx) error {
+	alumnis, err := s.alumniRepo.GetAll()
+	if err != nil {
+		return c.Status(500).JSON(fiber.Map{"error": err.Error()})
+	}
+
+	// Group by jurusan
+	stats := make(map[string]int)
+	for _, alumni := range alumnis {
+		stats[alumni.Jurusan]++
+	}
+
+	// Convert to array for response
+	type JurusanStat struct {
+		Jurusan string `json:"jurusan"`
+		Count   int    `json:"count"`
+	}
+	
+	result := []JurusanStat{}
+	for jurusan, count := range stats {
+		result = append(result, JurusanStat{Jurusan: jurusan, Count: count})
+	}
+
+	return c.JSON(fiber.Map{
+		"data": result,
+		"total": len(alumnis),
+	})
+}

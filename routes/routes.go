@@ -62,6 +62,8 @@ func SetupRoutes(
 	// Mahasiswa routes - User: hanya GET, Admin: semua operasi
 	mahasiswa := api.Group("/mahasiswa")
 	mahasiswa.Get("/count", mahasiswaService.GetMahasiswaCount)                           // User & Admin
+	mahasiswa.Get("/search", mahasiswaService.GetMahasiswas)                              // Search endpoint
+	mahasiswa.Get("/filter", mahasiswaService.GetMahasiswas)                              // Filter endpoint
 	mahasiswa.Get("/", mahasiswaService.GetMahasiswas)                                    // User & Admin
 	mahasiswa.Get("/:id", mahasiswaService.GetMahasiswa)                                  // User & Admin
 	mahasiswa.Post("/", middleware.RequireAdmin(), mahasiswaService.CreateMahasiswa)      // Admin only
@@ -71,8 +73,12 @@ func SetupRoutes(
 	// Alumni routes - User: hanya GET, Admin: semua operasi
 	alumni := api.Group("/alumni")
 	alumni.Get("/count", alumniService.GetAlumniCount)                           // User & Admin
-	alumni.Get("/", alumniService.GetAlumnis)                                    // User & Admin
 	alumni.Get("/my-profile", alumniService.GetAlumniByUser)                     // User untuk melihat profil sendiri
+	alumni.Get("/search", alumniService.GetAlumnis)                              // Search endpoint
+	alumni.Get("/filter", alumniService.GetAlumnis)                              // Filter endpoint
+	alumni.Get("/stats/by-year", alumniService.GetAlumniStatsByYear)             // Statistics by year
+	alumni.Get("/stats/by-jurusan", alumniService.GetAlumniStatsByJurusan)       // Statistics by jurusan
+	alumni.Get("/", alumniService.GetAlumnis)                                    // User & Admin
 	alumni.Get("/:id", alumniService.GetAlumni)                                  // User & Admin
 	alumni.Post("/", middleware.RequireAdmin(), alumniService.CreateAlumni)      // Admin only
 	alumni.Put("/:id", middleware.RequireAdmin(), alumniService.UpdateAlumni)    // Admin only
@@ -81,27 +87,28 @@ func SetupRoutes(
 	// Pekerjaan Alumni routes - User: hanya GET, Admin: semua operasi
 	pekerjaan := api.Group("/pekerjaan")
 	pekerjaan.Get("/count", pekerjaanService.GetPekerjaanAlumniCount)
-	pekerjaan.Get("/", pekerjaanService.GetPekerjaanAlumnis)
 	pekerjaan.Get("/my-jobs", pekerjaanService.GetPekerjaanByUser)
 	pekerjaan.Get("/deleted", pekerjaanService.GetDeletedPekerjaan)
-	pekerjaan.Get("/:id", pekerjaanService.GetPekerjaanAlumni)
+	pekerjaan.Get("/search", pekerjaanService.GetPekerjaanAlumnis)                        // Search endpoint
+	pekerjaan.Get("/filter", pekerjaanService.GetPekerjaanAlumnis)                        // Filter endpoint
+	pekerjaan.Get("/stats/by-industry", pekerjaanService.GetPekerjaanStatsByIndustry)     // Statistics by industry
+	pekerjaan.Get("/stats/by-location", pekerjaanService.GetPekerjaanStatsByLocation)     // Statistics by location
 	pekerjaan.Get("/alumni/:alumni_id", pekerjaanService.GetPekerjaanByAlumni)
+	pekerjaan.Get("/", pekerjaanService.GetPekerjaanAlumnis)
+	pekerjaan.Get("/:id", pekerjaanService.GetPekerjaanAlumni)
 	pekerjaan.Post("/", middleware.RequireAdmin(), pekerjaanService.CreatePekerjaanAlumni)
 	pekerjaan.Put("/:id", middleware.RequireAdmin(), pekerjaanService.UpdatePekerjaanAlumni)
-	api.Get("/perusahaan/:nama_perusahaan", pekerjaanService.GetAlumniCountByCompany)
 	pekerjaan.Delete("/soft/alumni/:alumni_id", pekerjaanService.SoftDeletePekerjaanByAlumni)
-
-
-
-
-
+	pekerjaan.Delete("/soft/:id", pekerjaanService.SoftDeletePekerjaanAlumni)             // Soft delete
+	pekerjaan.Post("/restore/:id", pekerjaanService.RestorePekerjaanAlumni)               // Restore
+	pekerjaan.Delete("/:id", pekerjaanService.DeletePekerjaanAlumni)                      // Hard delete
 	
+	api.Get("/perusahaan/:nama_perusahaan", pekerjaanService.GetAlumniCountByCompany)
 
-	// Endpoint Soal 1
-	api.Get("/trash", trashService.GetAllTrash)
-	// Endpoint Soal 2 
-	pekerjaan.Delete("/soft/:id", pekerjaanService.SoftDeletePekerjaanAlumni)
-	pekerjaan.Post("/restore/:id", pekerjaanService.RestorePekerjaanAlumni)
-	// Endpoint Soal 3
-	pekerjaan.Delete("/:id", pekerjaanService.DeletePekerjaanAlumni)
+	// Trash routes
+	trash := api.Group("/trash", middleware.RequireAdmin())
+	trash.Get("/pekerjaan", pekerjaanService.GetDeletedPekerjaan)                         // Get trashed pekerjaan
+	trash.Post("/pekerjaan/:id/restore", pekerjaanService.RestorePekerjaanAlumni)         // Restore pekerjaan
+	trash.Delete("/pekerjaan/:id", pekerjaanService.DeletePekerjaanAlumni)                // Permanent delete
+	trash.Get("/", trashService.GetAllTrash)                                              // Get all trash
 }

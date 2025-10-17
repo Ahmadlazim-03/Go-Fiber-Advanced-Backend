@@ -310,3 +310,63 @@ func (s *PekerjaanAlumniService) GetPekerjaanByUser(c *fiber.Ctx) error {
 
 	return c.JSON(pekerjaans)
 }
+
+// GetPekerjaanStatsByIndustry - Get pekerjaan statistics grouped by industry
+func (s *PekerjaanAlumniService) GetPekerjaanStatsByIndustry(c *fiber.Ctx) error {
+	pekerjaans, err := s.pekerjaanRepo.GetAll()
+	if err != nil {
+		return c.Status(500).JSON(fiber.Map{"error": err.Error()})
+	}
+
+	// Group by bidang_industri
+	stats := make(map[string]int)
+	for _, pekerjaan := range pekerjaans {
+		stats[pekerjaan.BidangIndustri]++
+	}
+
+	// Convert to array for response
+	type IndustryStat struct {
+		Industry string `json:"industry"`
+		Count    int    `json:"count"`
+	}
+	
+	result := []IndustryStat{}
+	for industry, count := range stats {
+		result = append(result, IndustryStat{Industry: industry, Count: count})
+	}
+
+	return c.JSON(fiber.Map{
+		"data": result,
+		"total": len(pekerjaans),
+	})
+}
+
+// GetPekerjaanStatsByLocation - Get pekerjaan statistics grouped by location
+func (s *PekerjaanAlumniService) GetPekerjaanStatsByLocation(c *fiber.Ctx) error {
+	pekerjaans, err := s.pekerjaanRepo.GetAll()
+	if err != nil {
+		return c.Status(500).JSON(fiber.Map{"error": err.Error()})
+	}
+
+	// Group by lokasi_kerja
+	stats := make(map[string]int)
+	for _, pekerjaan := range pekerjaans {
+		stats[pekerjaan.LokasiKerja]++
+	}
+
+	// Convert to array for response
+	type LocationStat struct {
+		Location string `json:"location"`
+		Count    int    `json:"count"`
+	}
+	
+	result := []LocationStat{}
+	for location, count := range stats {
+		result = append(result, LocationStat{Location: location, Count: count})
+	}
+
+	return c.JSON(fiber.Map{
+		"data": result,
+		"total": len(pekerjaans),
+	})
+}
