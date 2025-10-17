@@ -7,6 +7,13 @@ import (
 	"github.com/gofiber/fiber/v2"
 )
 
+// SetupRoutes configures all application routes
+// Routes are organized by domain/module in separate files:
+// - auth_routes.go: Authentication & user management
+// - mahasiswa_routes.go: Student management
+// - alumni_routes.go: Alumni management
+// - pekerjaan_routes.go: Job/employment management
+// - trash_routes.go: Soft delete/recycle bin management
 func SetupRoutes(
 	app *fiber.App,
 	mahasiswaService *services.MahasiswaService,
@@ -15,22 +22,30 @@ func SetupRoutes(
 	authService *services.AuthService,
 	trashService *services.TrashService,
 ) {
-	// Global variable untuk status API
+	// Global variable for API status
 	var isAPIActive = true
 
-	// Public routes - tidak perlu autentikasi
+	// ========================================
+	// PUBLIC ROUTES - No authentication required
+	// These MUST be defined BEFORE the protected API group
+	// ========================================
+	
+	// Public authentication routes
+	app.Post("/api/register", authService.Register)
+	app.Post("/api/login", authService.Login)
+	
 	auth := app.Group("/auth")
 	auth.Post("/register", authService.Register)
 	auth.Post("/login", authService.Login)
 
-	// API public routes (alias untuk compatibility)
-	app.Post("/api/register", authService.Register)
-	app.Post("/api/login", authService.Login)
-
-	// Protected routes - perlu autentikasi
+	// ========================================
+	// PROTECTED API GROUP - JWT authentication required
+	// All routes under /api/* (except register/login above) need JWT
+	// ========================================
 	api := app.Group("/api", middleware.ValidateJWT())
 
 	// API Status routes - admin only
+	// Allows admin to enable/disable API temporarily
 	api.Post("/status", middleware.RequireAdmin(), func(c *fiber.Ctx) error {
 		type StatusRequest struct {
 			Active bool `json:"active"`
@@ -47,68 +62,24 @@ func SetupRoutes(
 		return c.JSON(fiber.Map{"active": isAPIActive})
 	})
 
-	// Profile routes - user bisa akses profil sendiri
+	// ========================================
+	// SETUP MODULAR ROUTES
+	// Each function handles its own domain/module
+	// ========================================
+	
+	// Authentication & user management (protected routes only)
+	// Public routes already defined above
 	api.Get("/profile", authService.GetProfile)
 	api.Post("/logout", authService.Logout)
-
-	// User management routes - admin only
 	users := api.Group("/users", middleware.RequireAdmin())
 	users.Get("/", authService.GetUsers)
 	users.Get("/count", authService.GetUsersCount)
 	users.Get("/:id", authService.GetUser)
 	users.Put("/:id", authService.UpdateUser)
 	users.Delete("/:id", authService.DeleteUser)
-
-	// Mahasiswa routes - User: hanya GET, Admin: semua operasi
-	mahasiswa := api.Group("/mahasiswa")
-	mahasiswa.Get("/count", mahasiswaService.GetMahasiswaCount)                           // User & Admin
-	mahasiswa.Get("/search", mahasiswaService.GetMahasiswas)                              // Search endpoint
-	mahasiswa.Get("/filter", mahasiswaService.GetMahasiswas)                              // Filter endpoint
-	mahasiswa.Get("/", mahasiswaService.GetMahasiswas)                                    // User & Admin
-	mahasiswa.Get("/:id", mahasiswaService.GetMahasiswa)                                  // User & Admin
-	mahasiswa.Post("/", middleware.RequireAdmin(), mahasiswaService.CreateMahasiswa)      // Admin only
-	mahasiswa.Put("/:id", middleware.RequireAdmin(), mahasiswaService.UpdateMahasiswa)    // Admin only
-	mahasiswa.Delete("/:id", middleware.RequireAdmin(), mahasiswaService.DeleteMahasiswa) // Admin only
-
-	// Alumni routes - User: hanya GET, Admin: semua operasi
-	alumni := api.Group("/alumni")
-	alumni.Get("/count", alumniService.GetAlumniCount)                           // User & Admin
-	alumni.Get("/my-profile", alumniService.GetAlumniByUser)                     // User untuk melihat profil sendiri
-	alumni.Get("/search", alumniService.GetAlumnis)                              // Search endpoint
-	alumni.Get("/filter", alumniService.GetAlumnis)                              // Filter endpoint
-	alumni.Get("/stats/by-year", alumniService.GetAlumniStatsByYear)             // Statistics by year
-	alumni.Get("/stats/by-jurusan", alumniService.GetAlumniStatsByJurusan)       // Statistics by jurusan
-	alumni.Get("/", alumniService.GetAlumnis)                                    // User & Admin
-	alumni.Get("/:id", alumniService.GetAlumni)                                  // User & Admin
-	alumni.Post("/", middleware.RequireAdmin(), alumniService.CreateAlumni)      // Admin only
-	alumni.Put("/:id", middleware.RequireAdmin(), alumniService.UpdateAlumni)    // Admin only
-	alumni.Delete("/:id", middleware.RequireAdmin(), alumniService.DeleteAlumni) // Admin only
-
-	// Pekerjaan Alumni routes - User: hanya GET, Admin: semua operasi
-	pekerjaan := api.Group("/pekerjaan")
-	pekerjaan.Get("/count", pekerjaanService.GetPekerjaanAlumniCount)
-	pekerjaan.Get("/my-jobs", pekerjaanService.GetPekerjaanByUser)
-	pekerjaan.Get("/deleted", pekerjaanService.GetDeletedPekerjaan)
-	pekerjaan.Get("/search", pekerjaanService.GetPekerjaanAlumnis)                        // Search endpoint
-	pekerjaan.Get("/filter", pekerjaanService.GetPekerjaanAlumnis)                        // Filter endpoint
-	pekerjaan.Get("/stats/by-industry", pekerjaanService.GetPekerjaanStatsByIndustry)     // Statistics by industry
-	pekerjaan.Get("/stats/by-location", pekerjaanService.GetPekerjaanStatsByLocation)     // Statistics by location
-	pekerjaan.Get("/alumni/:alumni_id", pekerjaanService.GetPekerjaanByAlumni)
-	pekerjaan.Get("/", pekerjaanService.GetPekerjaanAlumnis)
-	pekerjaan.Get("/:id", pekerjaanService.GetPekerjaanAlumni)
-	pekerjaan.Post("/", middleware.RequireAdmin(), pekerjaanService.CreatePekerjaanAlumni)
-	pekerjaan.Put("/:id", middleware.RequireAdmin(), pekerjaanService.UpdatePekerjaanAlumni)
-	pekerjaan.Delete("/soft/alumni/:alumni_id", pekerjaanService.SoftDeletePekerjaanByAlumni)
-	pekerjaan.Delete("/soft/:id", pekerjaanService.SoftDeletePekerjaanAlumni)             // Soft delete
-	pekerjaan.Post("/restore/:id", pekerjaanService.RestorePekerjaanAlumni)               // Restore
-	pekerjaan.Delete("/:id", pekerjaanService.DeletePekerjaanAlumni)                      // Hard delete
 	
-	api.Get("/perusahaan/:nama_perusahaan", pekerjaanService.GetAlumniCountByCompany)
-
-	// Trash routes
-	trash := api.Group("/trash", middleware.RequireAdmin())
-	trash.Get("/pekerjaan", pekerjaanService.GetDeletedPekerjaan)                         // Get trashed pekerjaan
-	trash.Post("/pekerjaan/:id/restore", pekerjaanService.RestorePekerjaanAlumni)         // Restore pekerjaan
-	trash.Delete("/pekerjaan/:id", pekerjaanService.DeletePekerjaanAlumni)                // Permanent delete
-	trash.Get("/", trashService.GetAllTrash)                                              // Get all trash
+	SetupMahasiswaRoutes(api, mahasiswaService)          // Student management
+	SetupAlumniRoutes(api, alumniService)                // Alumni management
+	SetupPekerjaanRoutes(api, pekerjaanService)          // Job/employment management
+	SetupTrashRoutes(api, pekerjaanService, trashService) // Trash/recycle bin
 }

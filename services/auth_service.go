@@ -54,19 +54,25 @@ func (s *AuthService) Register(c *fiber.Ctx) error {
 		})
 	}
 
-	// Hash password
-	hashedPassword, err := utils.HashPassword(req.Password)
-	if err != nil {
-		return c.Status(500).JSON(fiber.Map{
-			"error": "Gagal mengenkripsi password",
-		})
+	// Hash password only for PostgreSQL/MongoDB (PocketBase hashes internally)
+	dbType := os.Getenv("DB_TYPE")
+	password := req.Password
+	var err error
+	
+	if dbType != "pocketbase" {
+		password, err = utils.HashPassword(req.Password)
+		if err != nil {
+			return c.Status(500).JSON(fiber.Map{
+				"error": "Gagal mengenkripsi password",
+			})
+		}
 	}
 
 	// Create user
 	user := &models.User{
 		Username: req.Username,
 		Email:    req.Email,
-		Password: hashedPassword,
+		Password: password,
 		Role:     req.Role,
 		IsActive: true,
 	}

@@ -95,7 +95,7 @@ func (s *MahasiswaService) UpdateMahasiswa(c *fiber.Ctx) error {
 
 	// Get existing mahasiswa
 	mahasiswa, err := s.mahasiswaRepo.GetByID(uint(id))
-	if err != nil {
+	if err != nil || mahasiswa == nil {
 		return c.Status(404).JSON(fiber.Map{"error": "Mahasiswa not found"})
 	}
 

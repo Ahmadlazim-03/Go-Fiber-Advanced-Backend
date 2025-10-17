@@ -93,11 +93,12 @@ func (r *UserRepositoryPocketBase) Create(user *models.User) error {
 	url := r.baseURL + "/api/collections/users/records"
 	
 	payload := map[string]interface{}{
-		"username":       user.Username,
-		"email":          user.Email,
-		"password":       user.Password,
+		"username":        user.Username,
+		"email":           user.Email,
+		"password":        user.Password,
 		"passwordConfirm": user.Password,
-		"role":           user.Role,
+		"role":            user.Role,
+		"is_active":       user.IsActive,
 	}
 
 	jsonData, _ := json.Marshal(payload)
