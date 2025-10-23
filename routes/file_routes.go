@@ -5,9 +5,8 @@ import (
     "github.com/gofiber/fiber/v2"
 )
 
-func SetupFileRoutes(app *fiber.App, service services.FileService) {
-    api := app.Group("/api")
-    files := api.Group("/files")
+func SetupFileRoutes(router fiber.Router, service services.FileService) {
+    files := router.Group("/files")
 
     files.Post("/upload", service.UploadFile)
     files.Get("/", service.GetAllFiles)

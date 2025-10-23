@@ -3,7 +3,6 @@ package routes
 import (
 	"modul4crud/middleware"
 	"modul4crud/services"
-	"modul4crud/routes"
 	"github.com/gofiber/fiber/v2"
 )
 
@@ -83,5 +82,5 @@ func SetupRoutes(
 	SetupAlumniRoutes(api, alumniService)                // Alumni management
 	SetupPekerjaanRoutes(api, pekerjaanService)          // Job/employment management
 	SetupTrashRoutes(api, pekerjaanService, trashService) // Trash/recycle bin
-	routes.SetupFileRoutes(api, fileService)             // File management
+	SetupFileRoutes(api, fileService)                    // File management
 }
