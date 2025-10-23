@@ -59,3 +59,10 @@ type PekerjaanAlumniRepository interface {
 	Count() (int64, error)
 	GetAlumniCountByCompany(namaPerusahaan string) (int64, error)
 }
+
+type FileRepository interface {
+	Create(file *models.File) error
+	FindAll() ([]models.File, error)
+	FindByID(id string) (*models.File, error)
+	Delete(id string) error
+}

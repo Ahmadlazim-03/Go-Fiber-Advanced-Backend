@@ -3,7 +3,7 @@ package routes
 import (
 	"modul4crud/middleware"
 	"modul4crud/services"
-
+	"modul4crud/routes"
 	"github.com/gofiber/fiber/v2"
 )
 
@@ -21,6 +21,7 @@ func SetupRoutes(
 	pekerjaanService *services.PekerjaanAlumniService,
 	authService *services.AuthService,
 	trashService *services.TrashService,
+	fileService services.FileService,
 ) {
 	// Global variable for API status
 	var isAPIActive = true
@@ -82,4 +83,5 @@ func SetupRoutes(
 	SetupAlumniRoutes(api, alumniService)                // Alumni management
 	SetupPekerjaanRoutes(api, pekerjaanService)          // Job/employment management
 	SetupTrashRoutes(api, pekerjaanService, trashService) // Trash/recycle bin
+	routes.SetupFileRoutes(api, fileService)             // File management
 }

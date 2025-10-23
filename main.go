@@ -112,22 +112,26 @@ func main() {
 	var mahasiswaRepo repo.MahasiswaRepository
 	var alumniRepo repo.AlumniRepository
 	var pekerjaanRepo repo.PekerjaanAlumniRepository
+	var fileRepo repo.FileRepository
 
 	if database.IsPostgres() {
 		userRepo = postgre.NewUserRepository(database.DB)
 		mahasiswaRepo = postgre.NewMahasiswaRepository(database.DB)
 		alumniRepo = postgre.NewAlumniRepository(database.DB)
 		pekerjaanRepo = postgre.NewPekerjaanAlumniRepository(database.DB)
+		// TODO: Tambahkan fileRepo Postgres jika ada
 	} else if database.IsMongoDB() {
 		userRepo = mongodb.NewUserRepositoryMongo(database.MongoDB)
 		mahasiswaRepo = mongodb.NewMahasiswaRepositoryMongo(database.MongoDB)
 		alumniRepo = mongodb.NewAlumniRepositoryMongo(database.MongoDB)
 		pekerjaanRepo = mongodb.NewPekerjaanAlumniRepositoryMongo(database.MongoDB)
+		fileRepo = mongodb.NewFileRepository(database.MongoDB)
 	} else if database.IsPocketBase() {
 		userRepo = pocketbase.NewUserRepository(database.PocketBaseURL)
 		mahasiswaRepo = pocketbase.NewMahasiswaRepository(database.PocketBaseURL)
 		alumniRepo = pocketbase.NewAlumniRepository(database.PocketBaseURL)
 		pekerjaanRepo = pocketbase.NewPekerjaanAlumniRepository(database.PocketBaseURL)
+		// TODO: Tambahkan fileRepo PocketBase jika ada
 		log.Println("✓ All PocketBase repositories initialized successfully")
 	}
 
@@ -140,6 +144,7 @@ func main() {
 	alumniService := services.NewAlumniService(alumniRepo)                // Direct repository
 	pekerjaanService := services.NewPekerjaanAlumniService(pekerjaanRepo) // Direct repository
 	trashService := services.NewTrashService(pekerjaanRepo)               // Trash service untuk data soft deleted
+	fileService := services.NewFileService(fileRepo, "./uploads")        // Path upload file
 
 	// Protected dashboard route - perlu autentikasi JWT
 	app.Get("/dashboard", func(c *fiber.Ctx) error {
@@ -149,7 +154,7 @@ func main() {
 	})
 
 	// Setup API routes with dependency injection
-	routes.SetupRoutes(app, mahasiswaService, alumniService, pekerjaanService, authService, trashService)
+	routes.SetupRoutes(app, mahasiswaService, alumniService, pekerjaanService, authService, trashService, fileService)
 
 	log.Println("Server running on http://localhost:8080")
 	log.Fatal(app.Listen(":8080"))
